@@ -31,12 +31,12 @@ create table if not exists progress (      -- trạng thái từng ô
   status      text   not null check (status in ('wip','done')),
   note        text,
   updated_at  timestamptz not null default now(),
-  updated_by  uuid default auth.uid(),
   primary key (task_id, location_id)
 );
 -- Ô không có dòng trong progress = chưa triển khai.
 
--- Quyền: ai cũng xem được, chỉ người đăng nhập mới được sửa trạng thái.
+-- Quyền: ai có link cũng xem và sửa được trạng thái (bảng progress).
+-- Danh sách khu vực, vị trí, công việc chỉ đọc từ web.
 alter table areas     enable row level security;
 alter table locations enable row level security;
 alter table tasks     enable row level security;
@@ -46,7 +46,7 @@ create policy "read areas"     on areas     for select using (true);
 create policy "read locations" on locations for select using (true);
 create policy "read tasks"     on tasks     for select using (true);
 create policy "read progress"  on progress  for select using (true);
-create policy "write progress" on progress  for all to authenticated using (true) with check (true);
+create policy "write progress" on progress  for all to anon, authenticated using (true) with check (true);
 
 -- ===== Dữ liệu ban đầu (lấy từ index.html) =====
 insert into areas (code,name,sort) values

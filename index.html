@@ -1,26 +1,34 @@
 <!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Tracking MEP tầng mẫu</title><style>
-:root{--bg:#fff;--fg:#1e1e1e;--mut:#6b6b6b;--line:#cfcfcf;--hd:#ffeb3b;--gd:#f2f2f2;--ok:#c6efce;--okf:#006100;--wip:#ffeb9c;--wipf:#9c5700;--sal:#f8cbad}
-body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--fg)}
-header{padding:16px} h1{margin:0;font-size:20px;color:#c00000} .sub{color:var(--mut);font-size:13px;margin-top:4px}
-.leg{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;margin-top:10px} .leg b{font-weight:700}
-.hint{font-size:12px;color:var(--mut);margin-top:8px}
-nav{padding:0 16px;display:flex;gap:8px} nav button{border:1px solid var(--line);background:#fafafa;padding:8px 14px;border-radius:6px;cursor:pointer;font-weight:700}
-nav button.on{background:var(--hd);border-color:#d4b800}
-.tab{display:none;padding:12px 16px 24px} .tab.on{display:block} .wrap{overflow:auto;max-height:80vh;border:1px solid var(--line)}
-table{border-collapse:collapse;font-size:12px} th,td{border:1px solid var(--line);padding:4px 6px}
-thead th{position:sticky;top:0;background:var(--hd);z-index:2} th.nm,td.nm{position:sticky;left:0;background:#fff;min-width:260px;text-align:left;font-weight:700;z-index:1}
-thead th.nm{z-index:3;background:var(--hd)}
-td.stt,td.cnt{text-align:center} td.gd{background:var(--gd);text-align:center;font-weight:700;font-size:11px;width:28px} td.gd span{writing-mode:vertical-rl;transform:rotate(180deg)}
-td.v{text-align:center;min-width:52px;height:22px;cursor:pointer;user-select:none;font-weight:700} td.v:hover{outline:2px solid #888;outline-offset:-2px}
-td.done{background:var(--ok);color:var(--okf)} td.wip{background:var(--wip);color:var(--wipf)} td.busy{opacity:.5}
-#msg{padding:16px;color:var(--mut)} #msg.err{color:#c00000}
-</style></head><body><header><h1>THE GIÓ RIVERSIDE – TRACKING MEP TẦNG MẪU</h1>
-<div class="sub">Tầng 5 – Tháp B · Cập nhật: <span id="upd">–</span></div>
-<div class="leg"><b style="color:#7030a0">■ Điện</b><b style="color:#1565c0">■ Cấp thoát nước</b><b style="color:#2e7d32">■ Điều hòa không khí</b><b style="color:#c62828">■ PCCC</b>
-<span style="background:var(--ok);padding:0 6px">done</span><span style="background:var(--wip);padding:0 6px">đang thi công</span><span style="background:#fff;border:1px solid var(--line);padding:0 6px">chưa triển khai</span></div>
-<div class="hint">Bấm vào ô để đổi trạng thái: trống → đang thi công → done → trống.</div></header>
-<nav id="nav"></nav><div id="msg">Đang tải dữ liệu…</div><div id="tabs"></div>
+<title>Tracking MEP tầng mẫu</title>
+<link rel="icon" href="assets/ricons-logo.png">
+<style>
+:root{--red:#e3302d;--blue:#1d5594;--blue-d:#163f6e;--fg:#1f2937;--mut:#6b7280;--line:#d9dee5;--soft:#f4f6f9;--ok:#c6efce;--okf:#006100;--wip:#ffeb9c;--wipf:#9c5700}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Segoe UI",Roboto,Arial,Helvetica,sans-serif;background:var(--soft);color:var(--fg)}
+header{display:flex;align-items:center;gap:20px;padding:14px 24px;background:#fff;border-bottom:4px solid var(--red);box-shadow:0 1px 4px rgba(0,0,0,.06)}
+header img{height:40px;display:block}
+header h1{margin:0;padding-left:20px;border-left:2px solid var(--line);font-size:20px;font-weight:800;letter-spacing:.3px;color:var(--blue)}
+main{padding:16px 24px 24px}
+nav{display:flex;gap:0}
+nav button{border:1px solid var(--blue);background:#fff;color:var(--blue);padding:9px 22px;margin:0;border-radius:0;cursor:pointer;font:inherit;font-weight:700;font-size:14px}
+nav button+button{border-left:0}
+nav button:first-child{border-radius:4px 0 0 0} nav button:last-child{border-radius:0 4px 0 0}
+nav button.on{background:var(--blue);color:#fff}
+.tab{display:none} .tab.on{display:block}
+.wrap{overflow:auto;max-height:calc(100vh - 150px);background:#fff;border:1px solid var(--line);border-top:3px solid var(--blue)}
+table{border-collapse:collapse;font-size:12px} th,td{border:1px solid var(--line);padding:5px 7px}
+thead th{position:sticky;top:0;background:var(--blue);color:#fff;font-weight:700;z-index:2;white-space:nowrap}
+th.nm,td.nm{position:sticky;left:0;background:#fff;min-width:280px;text-align:left;font-weight:700;z-index:1}
+thead th.nm{z-index:3;background:var(--blue)}
+td.stt,td.cnt{text-align:center;color:var(--mut)} td.cnt{font-weight:700;color:var(--fg)}
+td.gd{background:var(--soft);color:var(--blue);text-align:center;font-weight:800;font-size:11px;width:30px} td.gd span{writing-mode:vertical-rl;transform:rotate(180deg)}
+tbody tr:hover td:not(.gd){background-color:#f9fbfd} tbody tr:hover td.nm{background:#f9fbfd}
+td.v{text-align:center;min-width:56px;height:24px;cursor:pointer;user-select:none;font-weight:700} td.v:hover{outline:2px solid var(--blue);outline-offset:-2px}
+tbody tr td.done{background:var(--ok);color:var(--okf)} tbody tr td.wip{background:var(--wip);color:var(--wipf)} td.busy{opacity:.5}
+#msg{padding:16px 0;color:var(--mut)} #msg.err{color:var(--red)}
+@media (max-width:640px){header{padding:12px 16px;gap:12px} header img{height:28px} header h1{font-size:14px;padding-left:12px} main{padding:12px 16px}}
+</style></head><body><header><img src="assets/ricons-logo.png" alt="Ricons"><h1>THE GIÓ RIVERSIDE – TRACKING MEP TẦNG MẪU</h1></header>
+<main><nav id="nav"></nav><div id="msg">Đang tải dữ liệu…</div><div id="tabs"></div></main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script>
 const SUPABASE_URL='https://klglmrnuqgurtnyflyju.supabase.co';
@@ -47,7 +55,7 @@ function paintCount(taskId){
 }
 function paintUpd(){
   let m=null;for(const v of state.values()){const d=new Date(v.updated_at);if(!m||d>m)m=d}
-  document.getElementById('upd').textContent=m?fmt(m):'chưa có cập nhật';
+  const u=document.getElementById('upd');if(u)u.textContent=m?fmt(m):'chưa có cập nhật';
 }
 function render(areas){
   const nav=document.getElementById('nav'),tabs=document.getElementById('tabs');

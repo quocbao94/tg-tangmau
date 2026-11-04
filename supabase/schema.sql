@@ -150,3 +150,9 @@ update tasks t set seq=v.seq from (values
   ('Kéo cáp báo cháy hành lang',7),('Test cáp báo cháy hành lang',8),
   ('Test ống cấp hành lang',8),('Test ống gió layout hành lang',8)
 ) v(name,seq) where t.area_code='hanh_lang' and t.name=v.name;
+
+-- Cho phép sửa trình tự từ web (chỉ cột seq của tasks)
+revoke update on tasks from anon, authenticated;
+grant update (seq) on tasks to anon, authenticated;
+create policy "edit seq" on tasks for update to anon, authenticated using (true) with check (true);
+alter publication supabase_realtime add table tasks;

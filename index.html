@@ -20,7 +20,7 @@ table{border-collapse:collapse;font-size:12px} th,td{border:1px solid var(--line
 thead th{position:sticky;top:0;background:var(--blue);color:#fff;font-weight:700;z-index:2;white-space:nowrap}
 th.nm,td.nm{position:sticky;left:0;background:#fff;min-width:280px;text-align:left;font-weight:700;z-index:1}
 thead th.nm{z-index:3;background:var(--blue)}
-td.stt,td.cnt,td.seq{text-align:center;color:var(--mut)} td.seq{font-weight:700;color:var(--blue)} td.cnt{font-weight:700;color:var(--fg)}
+td.stt,td.cnt,td.seq{text-align:center;color:var(--mut)} td.seq{font-weight:700;color:var(--blue);cursor:text;min-width:62px} td.seq:hover{outline:2px solid var(--blue);outline-offset:-2px} td.seq input{width:44px;padding:2px;font:inherit;font-weight:700;text-align:center;border:1px solid var(--blue)} td.cnt{font-weight:700;color:var(--fg)}
 td.gd{background:var(--soft);color:var(--blue);text-align:center;font-weight:800;font-size:11px;width:30px} td.gd span{writing-mode:vertical-rl;transform:rotate(180deg)}
 tbody tr:hover td:not(.gd):not(.v){background-color:#f9fbfd} tbody tr:hover td.nm{background:#f9fbfd}
 td.v{text-align:center;min-width:56px;height:24px;cursor:pointer;user-select:none;font-weight:700} td.v:hover{outline:2px solid var(--blue);outline-offset:-2px}
@@ -85,7 +85,7 @@ function render(areas){
     T.forEach((t,j)=>{
       let gd='';
       if(j===0||T[j-1].stage!==t.stage){let n=0;while(T[j+n]&&T[j+n].stage===t.stage)n++;gd=`<td class="gd" rowspan="${n}"><span>${esc(t.stage)}</span></td>`}
-      h+=`<tr data-t="${t.id}"><td class="stt">${t.stt}</td>${gd}<td class="nm" style="color:${COLOR[t.discipline]}">${esc(t.name)}</td><td class="seq">${t.seq??''}</td><td class="cnt"></td>`+
+      h+=`<tr data-t="${t.id}"><td class="stt">${t.stt}</td>${gd}<td class="nm" style="color:${COLOR[t.discipline]}">${esc(t.name)}</td><td class="seq" title="Bấm để sửa trình tự">${t.seq??''}</td><td class="cnt"></td>`+
         L.map(l=>`<td class="v" data-k="${t.id}:${l.id}"></td>`).join('')+'</tr>';
     });
     tabs.insertAdjacentHTML('beforeend',h+'</tbody></table></div></section>');
@@ -93,7 +93,7 @@ function render(areas){
   nav.querySelectorAll('button').forEach(b=>b.onclick=()=>{document.querySelectorAll('nav button,.tab').forEach(e=>e.classList.remove('on'));b.classList.add('on');document.getElementById(b.dataset.t).classList.add('on')});
   document.querySelectorAll('td.v').forEach(paintCell);
   tasks.forEach(t=>paintCount(t.id));paintUpd();
-  tabs.addEventListener('click',onClick);
+  tabs.addEventListener('click',onClick);tabs.addEventListener('click',onSeqClick);
 }
 const pop=document.getElementById('pop'),popD=document.getElementById('popD');let cur=null;
 function openPop(td){
@@ -142,6 +142,29 @@ async function fail(k,td,e){
   if(g.data)state.set(k,g.data);else if(!g.error)state.delete(k);
   paintCell(td);paintCount(task_id);alert('Không lưu được: '+(e.message||e));
 }
+function onSeqClick(e){
+  const td=e.target.closest('td.seq');if(!td||td.querySelector('input'))return;
+  const id=+td.parentElement.dataset.t,t=tasks.find(x=>x.id===id),old=t.seq;
+  const inp=document.createElement('input');inp.type='number';inp.min=1;inp.value=old??'';
+  td.textContent='';td.appendChild(inp);inp.focus();inp.select();
+  let done=false;
+  const finish=async save=>{
+    if(done)return;done=true;
+    const v=inp.value.trim()===''?null:Math.max(1,Math.round(+inp.value));
+    td.textContent=(save?v:old)??'';
+    if(!save||v===old)return;
+    t.seq=v;td.classList.add('busy');
+    const r=await sb.from('tasks').update({seq:v}).eq('id',id);
+    td.classList.remove('busy');
+    if(r.error){t.seq=old;td.textContent=old??'';alert('Không lưu được: '+r.error.message)}
+  };
+  inp.onkeydown=e=>{if(e.key==='Enter')finish(true);else if(e.key==='Escape')finish(false)};
+  inp.onblur=()=>finish(true);
+}
+function onTaskRealtime(p){
+  const t=tasks.find(x=>x.id===p.new.id);if(!t)return;t.seq=p.new.seq;
+  const td=document.querySelector(`tr[data-t="${t.id}"] td.seq`);if(td&&!td.querySelector('input'))td.textContent=t.seq??'';
+}
 function onRealtime(p){
   const row=p.eventType==='DELETE'?p.old:p.new,k=`${row.task_id}:${row.location_id}`;
   if(chains.has(k))return; // ô này đang lưu từ máy mình, bỏ qua tín hiệu dội về
@@ -160,7 +183,7 @@ function onRealtime(p){
     const err=[a,l,t,p].find(r=>r.error);if(err)throw err.error;
     locs=l.data;tasks=t.data;p.data.forEach(r=>state.set(`${r.task_id}:${r.location_id}`,r));
     msg.remove();render(a.data);
-    sb.channel('progress').on('postgres_changes',{event:'*',schema:'public',table:'progress'},onRealtime).subscribe();
+    sb.channel('progress').on('postgres_changes',{event:'*',schema:'public',table:'progress'},onRealtime).on('postgres_changes',{event:'UPDATE',schema:'public',table:'tasks'},onTaskRealtime).subscribe();
   }catch(e){msg.className='err';msg.textContent='Không tải được dữ liệu: '+(e.message||e)}
 })();
 </script>

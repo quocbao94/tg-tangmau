@@ -129,3 +129,7 @@ insert into tasks (area_code,stt,stage,discipline,name) values
   ('hanh_lang',19,'SAU SƠN LỚP 1','dhkk','PKT điện: Lắp đặt trục ống gió'),
   ('hanh_lang',20,'SAU SƠN LỚP 1','dhkk','Phòng rác: Lắp đặt trục ống gió hút mùi')
 on conflict do nothing;
+
+-- Realtime: trang web tự cập nhật khi người khác đổi trạng thái.
+alter publication supabase_realtime add table progress;
+alter table progress replica identity full;

@@ -31,6 +31,7 @@ create table if not exists progress (      -- trạng thái từng ô
   location_id bigint not null references locations(id) on delete cascade,
   status      text   not null check (status in ('wip','done')),
   deadline    date,                       -- hạn hoàn thành khi đang thi công
+  pct         smallint check (pct between 0 and 100), -- % hoàn thành khi đang thi công
   note        text,
   updated_at  timestamptz not null default now(),
   primary key (task_id, location_id)

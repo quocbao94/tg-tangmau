@@ -25,7 +25,8 @@ td.gd{background:var(--soft);color:var(--blue);text-align:center;font-weight:800
 tbody tr:hover td:not(.gd):not(.v){background-color:#f9fbfd} tbody tr:hover td.nm{background:#f9fbfd}
 td.v{text-align:center;min-width:56px;height:24px;cursor:pointer;user-select:none;font-weight:700} td.v:hover{outline:2px solid var(--blue);outline-offset:-2px}
 tbody tr td.done{background:var(--ok);color:var(--okf)} tbody tr td.wip{background:var(--wip);color:var(--wipf)} td.busy{opacity:.5}
-td.v{font-size:11px} tbody tr td.late{background:#fde2e1;color:var(--red)}
+td.v{font-size:11px;line-height:1.15} td.v small{display:block;font-size:10px;font-weight:400}
+#pop .row{display:flex;gap:6px} #pop .row label:first-child{flex:0 0 70px} tbody tr td.late{background:#fde2e1;color:var(--red)}
 #pop{position:absolute;z-index:10;display:none;width:220px;background:#fff;border:1px solid var(--line);border-top:3px solid var(--blue);box-shadow:0 6px 20px rgba(0,0,0,.15);padding:10px;font-size:13px}
 #pop .t{font-weight:700;color:var(--blue);margin-bottom:8px;font-size:12px}
 #pop button.s{display:flex;align-items:center;gap:8px;width:100%;margin:0 0 4px;padding:7px 8px;border:1px solid var(--line);background:#fff;cursor:pointer;font:inherit;text-align:left}
@@ -42,7 +43,7 @@ td.v{font-size:11px} tbody tr td.late{background:#fde2e1;color:var(--red)}
 <button class="s" data-s=""><i></i>Chưa thi công</button>
 <button class="s" data-s="wip"><i style="background:var(--wip)"></i>Đang thi công</button>
 <button class="s" data-s="done"><i style="background:var(--ok)"></i>Done</button>
-<label>Deadline (khi đang thi công)<input type="date" id="popD"></label></div>
+<div class="row"><label>% xong<input type="number" id="popP" min="0" max="100" step="5" placeholder="%"></label><label style="flex:1">Deadline<input type="date" id="popD"></label></div></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script>
 const SUPABASE_URL='https://klglmrnuqgurtnyflyju.supabase.co';
@@ -50,7 +51,7 @@ const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYm
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 const COLOR={dien:'#7030A0',ctn:'#1565C0',dhkk:'#2E7D32',pccc:'#C62828',chung:'#222'};
 const MARK={done:'✓'};
-const state=new Map(); // "taskId:locId" -> {status,deadline,updated_at}
+const state=new Map(); // "taskId:locId" -> {status,deadline,pct,updated_at}
 let tasks=[],locs=[],lastUpd=null;
 
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -62,8 +63,8 @@ function paintCell(td){
   const v=state.get(td.dataset.k),st=v?.status||'';
   const late=st==='wip'&&v.deadline&&v.deadline<today();
   td.className='v'+(st?' '+st:'')+(late?' late':'');
-  td.textContent=st==='wip'?(ddmm(v.deadline)||'…'):(MARK[st]||'');
-  td.title=st==='wip'?(v.deadline?`Đang thi công · deadline ${v.deadline.split('-').reverse().join('/')}${late?' (trễ hạn)':''}`:'Đang thi công · chưa có deadline'):st==='done'?'Done':'Chưa thi công';
+  if(st==='wip'){const a=v.pct!=null?v.pct+'%':'',b=ddmm(v.deadline);td.innerHTML=a&&b?`${a}<small>${b}</small>`:(a||b||'…')}else td.textContent=MARK[st]||'';
+  td.title=st==='wip'?'Đang thi công'+(v.pct!=null?` · xong ${v.pct}%`:'')+(v.deadline?` · deadline ${v.deadline.split('-').reverse().join('/')}${late?' (trễ hạn)':''}`:' · chưa có deadline'):st==='done'?'Done':'Chưa thi công';
 }
 function paintCount(taskId){
   const row=document.querySelector(`tr[data-t="${taskId}"]`);if(!row)return;
@@ -95,13 +96,13 @@ function render(areas){
   tasks.forEach(t=>paintCount(t.id));paintUpd();
   tabs.addEventListener('click',onClick);tabs.addEventListener('click',onSeqClick);
 }
-const pop=document.getElementById('pop'),popD=document.getElementById('popD');let cur=null;
+const pop=document.getElementById('pop'),popD=document.getElementById('popD'),popP=document.getElementById('popP');let cur=null;
 function openPop(td){
-  cur=td;const [tid,lid]=td.dataset.k.split(':').map(Number);
+  cur=td;openedAt=Date.now();const [tid,lid]=td.dataset.k.split(':').map(Number);
   const t=tasks.find(x=>x.id===tid),l=locs.find(x=>x.id===lid),v=state.get(td.dataset.k);
   document.getElementById('popT').textContent=`${l.name} · ${t.name}`;
   pop.querySelectorAll('button.s').forEach(b=>b.classList.toggle('on',b.dataset.s===(v?.status||'')));
-  popD.value=v?.deadline||'';popD.disabled=v?.status!=='wip';
+  popD.value=v?.deadline||'';popP.value=v?.pct??'';popD.disabled=popP.disabled=v?.status!=='wip';
   const r=td.getBoundingClientRect();pop.style.display='block';
   let x=r.left+scrollX,y=r.bottom+scrollY+4;
   x=Math.min(x,scrollX+document.documentElement.clientWidth-pop.offsetWidth-8);
@@ -112,13 +113,16 @@ function closePop(){pop.style.display='none';cur=null}
 function onClick(e){const td=e.target.closest('td.v');if(td)openPop(td)}
 document.addEventListener('mousedown',e=>{if(cur&&!pop.contains(e.target)&&!e.target.closest('td.v'))closePop()});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closePop()});
-document.addEventListener('scroll',e=>{if(cur&&e.target!==document&&!pop.contains(e.target))closePop()},true);
+let openedAt=0;
+document.addEventListener('scroll',e=>{if(cur&&Date.now()-openedAt>400&&e.target!==document&&!pop.contains(e.target))closePop()},true);
 pop.querySelectorAll('button.s').forEach(b=>b.onclick=()=>{
   const st=b.dataset.s,td=cur;
-  if(st==='wip'){setCell(td,{status:'wip',deadline:popD.value||state.get(td.dataset.k)?.deadline||null});openPop(td);popD.focus();try{popD.showPicker()}catch(e){}}
+  if(st==='wip'){const o=state.get(td.dataset.k);setCell(td,{status:'wip',deadline:o?.status==='wip'?o.deadline:null,pct:o?.status==='wip'?o.pct:null});openPop(td);popP.focus()}
   else{setCell(td,st?{status:st,deadline:null}:null);closePop()}
 });
-popD.onchange=()=>{if(cur&&state.get(cur.dataset.k)?.status==='wip')setCell(cur,{status:'wip',deadline:popD.value||null})};
+const readPct=()=>popP.value===''?null:Math.min(100,Math.max(0,Math.round(+popP.value)));
+popD.onchange=popP.onchange=()=>{if(cur&&state.get(cur.dataset.k)?.status==='wip'){const pct=readPct();popP.value=pct??'';setCell(cur,{status:'wip',deadline:popD.value||null,pct})}};
+popP.onkeydown=e=>{if(e.key==='Enter')popP.onchange()};
 const chains=new Map();
 function setCell(td,val){
   const k=td.dataset.k,task_id=+k.split(':')[0];
@@ -132,13 +136,13 @@ function setCell(td,val){
 async function send(k){
   const [task_id,location_id]=k.split(':').map(Number),v=state.get(k);
   const r=v
-    ?await sb.from('progress').upsert({task_id,location_id,status:v.status,deadline:v.deadline||null,updated_at:new Date().toISOString()})
+    ?await sb.from('progress').upsert({task_id,location_id,status:v.status,deadline:v.deadline||null,pct:v.pct??null,updated_at:new Date().toISOString()})
     :await sb.from('progress').delete().match({task_id,location_id});
   if(r.error)throw r.error;
 }
 async function fail(k,td,e){
   const [task_id,location_id]=k.split(':').map(Number);
-  const g=await sb.from('progress').select('status,deadline,updated_at').match({task_id,location_id}).maybeSingle();
+  const g=await sb.from('progress').select('status,deadline,pct,updated_at').match({task_id,location_id}).maybeSingle();
   if(g.data)state.set(k,g.data);else if(!g.error)state.delete(k);
   paintCell(td);paintCount(task_id);alert('Không lưu được: '+(e.message||e));
 }
@@ -168,7 +172,7 @@ function onTaskRealtime(p){
 function onRealtime(p){
   const row=p.eventType==='DELETE'?p.old:p.new,k=`${row.task_id}:${row.location_id}`;
   if(chains.has(k))return; // ô này đang lưu từ máy mình, bỏ qua tín hiệu dội về
-  if(p.eventType==='DELETE')state.delete(k);else state.set(k,{status:row.status,deadline:row.deadline,updated_at:row.updated_at});
+  if(p.eventType==='DELETE')state.delete(k);else state.set(k,{status:row.status,deadline:row.deadline,pct:row.pct,updated_at:row.updated_at});
   const td=document.querySelector(`td.v[data-k="${k}"]`);if(td){paintCell(td);paintCount(row.task_id)}
   paintUpd();
 }
@@ -179,7 +183,7 @@ function onRealtime(p){
       sb.from('areas').select('*').order('sort'),
       sb.from('locations').select('*').order('sort'),
       sb.from('tasks').select('*').order('stt'),
-      sb.from('progress').select('task_id,location_id,status,deadline,updated_at')]);
+      sb.from('progress').select('task_id,location_id,status,deadline,pct,updated_at')]);
     const err=[a,l,t,p].find(r=>r.error);if(err)throw err.error;
     locs=l.data;tasks=t.data;p.data.forEach(r=>state.set(`${r.task_id}:${r.location_id}`,r));
     msg.remove();render(a.data);

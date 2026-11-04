@@ -134,3 +134,19 @@ on conflict do nothing;
 -- Realtime: trang web tự cập nhật khi người khác đổi trạng thái.
 alter publication supabase_realtime add table progress;
 alter table progress replica identity full;
+
+-- Trình tự thi công
+alter table tasks add column if not exists seq int;
+update tasks t set seq=v.seq from (values
+  (1,1),(2,1),(3,2),(4,1),(5,1),(6,2),(7,3),(8,3),(9,1),(10,2),(11,3),(12,2),
+  (13,4),(14,5),(15,6),(16,6),(17,6),(18,7),(19,8),(20,7),(21,7),(22,8),(23,7)
+) v(stt,seq) where t.area_code='can_ho' and t.stt=v.stt;
+update tasks t set seq=v.seq from (values
+  ('Lắp đặt nước cấp hành lang',1),('Lắp đặt ống gió/Van gió layout hành lang',2),
+  ('Lắp đặt máng cáp hành lang',3),('Ống chữa cháy hành lang',4),
+  ('Lắp đặt ống gió trục đứng hành lang',5),('Test ống gió trục đứng hành lang',6),
+  ('Lắp đặt tủ chữa cháy hành lang',5),('Lắp đặt ống/box báo cháy âm tường hành lang',5),
+  ('Kéo cáp điện/điện nhẹ hành lang',7),('Test cáp điện/điện nhẹ hành lang',8),
+  ('Kéo cáp báo cháy hành lang',7),('Test cáp báo cháy hành lang',8),
+  ('Test ống cấp hành lang',8),('Test ống gió layout hành lang',8)
+) v(name,seq) where t.area_code='hanh_lang' and t.name=v.name;

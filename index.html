@@ -20,7 +20,7 @@ table{border-collapse:collapse;font-size:12px} th,td{border:1px solid var(--line
 thead th{position:sticky;top:0;background:var(--blue);color:#fff;font-weight:700;z-index:2;white-space:nowrap}
 th.nm,td.nm{position:sticky;left:0;background:#fff;min-width:280px;text-align:left;font-weight:700;z-index:1}
 thead th.nm{z-index:3;background:var(--blue)}
-td.stt,td.cnt{text-align:center;color:var(--mut)} td.cnt{font-weight:700;color:var(--fg)}
+td.stt,td.cnt,td.seq{text-align:center;color:var(--mut)} td.seq{font-weight:700;color:var(--blue)} td.cnt{font-weight:700;color:var(--fg)}
 td.gd{background:var(--soft);color:var(--blue);text-align:center;font-weight:800;font-size:11px;width:30px} td.gd span{writing-mode:vertical-rl;transform:rotate(180deg)}
 tbody tr:hover td:not(.gd):not(.v){background-color:#f9fbfd} tbody tr:hover td.nm{background:#f9fbfd}
 td.v{text-align:center;min-width:56px;height:24px;cursor:pointer;user-select:none;font-weight:700} td.v:hover{outline:2px solid var(--blue);outline-offset:-2px}
@@ -80,12 +80,12 @@ function render(areas){
   areas.forEach((a,i)=>{
     const L=locs.filter(l=>l.area_code===a.code),T=tasks.filter(t=>t.area_code===a.code);
     const b=document.createElement('button');b.textContent=a.name;b.dataset.t='t'+i;if(!i)b.className='on';nav.appendChild(b);
-    let h=`<section id="t${i}" class="tab${i?'':' on'}"><div class="wrap"><table><thead><tr><th class="stt">STT</th><th class="gd">GĐ</th><th class="nm">Nội dung công việc</th><th class="cnt">Đã xong</th>`+
+    let h=`<section id="t${i}" class="tab${i?'':' on'}"><div class="wrap"><table><thead><tr><th class="stt">STT</th><th class="gd">GĐ</th><th class="nm">Nội dung công việc</th><th class="seq">Trình tự</th><th class="cnt">Đã xong</th>`+
       L.map(l=>`<th class="v">${esc(l.name)}</th>`).join('')+'</tr></thead><tbody>';
     T.forEach((t,j)=>{
       let gd='';
       if(j===0||T[j-1].stage!==t.stage){let n=0;while(T[j+n]&&T[j+n].stage===t.stage)n++;gd=`<td class="gd" rowspan="${n}"><span>${esc(t.stage)}</span></td>`}
-      h+=`<tr data-t="${t.id}"><td class="stt">${t.stt}</td>${gd}<td class="nm" style="color:${COLOR[t.discipline]}">${esc(t.name)}</td><td class="cnt"></td>`+
+      h+=`<tr data-t="${t.id}"><td class="stt">${t.stt}</td>${gd}<td class="nm" style="color:${COLOR[t.discipline]}">${esc(t.name)}</td><td class="seq">${t.seq??''}</td><td class="cnt"></td>`+
         L.map(l=>`<td class="v" data-k="${t.id}:${l.id}"></td>`).join('')+'</tr>';
     });
     tabs.insertAdjacentHTML('beforeend',h+'</tbody></table></div></section>');

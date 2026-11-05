@@ -45,7 +45,7 @@ td.v{font-size:11px;line-height:1.15} td.v small{display:block;font-size:10px;fo
 #pop input{width:100%;margin-top:3px;padding:5px;font:inherit;border:1px solid var(--line)}
 #pop input:disabled{background:var(--soft)}
 tr.ms td.nm{color:var(--blue)} td.gd.ms{background:#e8eef6} td.h{text-align:center;min-width:56px;cursor:pointer;font-weight:700;font-size:11px;color:var(--blue)} td.h:hover{outline:2px solid var(--blue);outline-offset:-2px}
-tbody tr td.h.set{background:#dbe7f5} tbody tr td.h.auto{background:#f1f5fa;color:#5b7aa3;font-weight:400;font-style:italic} #popH .n{font-size:11px;color:var(--mut);margin-top:6px} tr.ms:last-of-type td{border-bottom:2px solid var(--blue)}
+tbody tr td.h.set{background:#dbe7f5} tbody tr td.h.auto{background:#f1f5fa;color:#5b7aa3;font-weight:400;font-style:italic} #popH .n{font-size:11px;color:var(--mut);margin-top:6px} tr.ms td{border-bottom:2px solid var(--blue)}
 #popH{position:absolute;z-index:10;display:none;width:220px;background:#fff;border:1px solid var(--line);border-top:3px solid var(--blue);box-shadow:0 6px 20px rgba(0,0,0,.15);padding:10px;font-size:13px}
 #popH .t{font-weight:700;color:var(--blue);margin-bottom:8px;font-size:12px} #popH input{width:100%;padding:5px;font:inherit;border:1px solid var(--line)}
 #popH button{margin-top:8px;padding:6px 10px;border:1px solid var(--line);background:#fff;cursor:pointer;font:inherit;font-size:12px}
@@ -111,16 +111,18 @@ function renderArea(i){
   const a=areas[i],L=sortedLocs(a.code),T=tasks.filter(t=>t.area_code===a.code);
   let h='<table><thead><tr><th class="stt">STT</th><th class="gd">GĐ</th><th class="nm">Nội dung công việc</th><th class="seq">Trình tự</th><th class="cnt">Đã xong</th>'+
     L.map(l=>`<th class="v">${esc(l.name)}</th>`).join('')+'</tr></thead><tbody>';
-  miles.forEach((m,j)=>{
-    const gd=j?'':`<td class="gd ms" rowspan="${miles.length}" title="XD bàn giao">${miles.length>2?'<span>XD BÀN GIAO</span>':'XD'}</td>`;
+  const msRows=list=>{let h='';list.forEach((m,j)=>{
+    const gd=j?'':`<td class="gd ms" rowspan="${list.length}" title="XD bàn giao">${list.length>2?'<span>XD BÀN GIAO</span>':'XD'}</td>`;
     const n=L.filter(l=>effDate(m,l.id).date).length;
     h+=`<tr class="ms" data-m="${m.id}"><td class="stt"></td>${gd}<td class="nm">${esc(m.name)}</td><td></td><td class="cnt">${n}/${L.length}</td>`+
       L.map(l=>{const {date:d,auto}=effDate(m,l.id);const cls=d?(auto?' auto':' set'):'';
         const tt=d?(auto?`Mặc định ${dmy(d)} (${miles.find(x=>x.id===m.base_id).name.toLowerCase()} + ${m.offset_days} ngày) · bấm để sửa`:'Nhận bàn giao '+dmy(d)):'Bấm để điền ngày nhận bàn giao';
         return `<td class="h${cls}" data-h="${m.id}:${l.id}" title="${tt}">${ddmm(d)}</td>`}).join('')+'</tr>';
-  });
+  });return h};
+  h+=msRows(miles.filter(m=>!m.before_stage));
   T.forEach((t,j)=>{
     let gd='';
+    if(j===0||T[j-1].stage!==t.stage)h+=msRows(miles.filter(m=>m.before_stage===t.stage));
     if(j===0||T[j-1].stage!==t.stage){let n=0;while(T[j+n]&&T[j+n].stage===t.stage)n++;gd=`<td class="gd" rowspan="${n}"><span>${esc(t.stage)}</span></td>`}
     h+=`<tr data-t="${t.id}"><td class="stt">${t.stt}</td>${gd}<td class="nm" style="color:${COLOR[t.discipline]}">${esc(t.name)}</td><td class="seq" title="Bấm để sửa trình tự">${t.seq??''}</td><td class="cnt"></td>`+
       L.map(l=>`<td class="v" data-k="${t.id}:${l.id}"></td>`).join('')+'</tr>';

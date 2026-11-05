@@ -171,3 +171,7 @@ alter table milestones add column if not exists offset_days int;
 insert into milestones (name,sort,base_id,offset_days)
 select 'Bàn giao tường xây',2,id,14 from milestones where name='Bàn giao mặt bằng'
 on conflict (name) do nothing;
+
+-- Vị trí dòng mốc trong bảng: null = đầu bảng, có giá trị = ngay trước giai đoạn đó
+alter table milestones add column if not exists before_stage text;
+update milestones set before_stage='SAU XÂY TƯỜNG' where name='Bàn giao tường xây';

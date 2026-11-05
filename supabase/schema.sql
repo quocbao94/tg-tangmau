@@ -164,3 +164,10 @@ create policy "write handovers" on handovers  for all to anon, authenticated usi
 alter publication supabase_realtime add table handovers;
 alter table handovers replica identity full;
 insert into milestones (name,sort) values ('Bàn giao mặt bằng',1) on conflict do nothing;
+
+-- Mốc tính mặc định từ mốc khác: ngày mặc định = ngày của base_id + offset_days (sửa tay thì lưu vào handovers)
+alter table milestones add column if not exists base_id bigint references milestones(id);
+alter table milestones add column if not exists offset_days int;
+insert into milestones (name,sort,base_id,offset_days)
+select 'Bàn giao tường xây',2,id,14 from milestones where name='Bàn giao mặt bằng'
+on conflict (name) do nothing;

@@ -45,7 +45,7 @@ td.v{font-size:11px;line-height:1.15} td.v small{display:block;font-size:10px;fo
 #pop input{width:100%;margin-top:3px;padding:5px;font:inherit;border:1px solid var(--line)}
 #pop input:disabled{background:var(--soft)}
 tr.ms td.nm{color:var(--blue)} td.gd.ms{background:#e8eef6} td.h{text-align:center;min-width:56px;cursor:pointer;font-weight:700;font-size:11px;color:var(--blue)} td.h:hover{outline:2px solid var(--blue);outline-offset:-2px}
-tbody tr td.h.set{background:#dbe7f5} tr.ms:last-of-type td{border-bottom:2px solid var(--blue)}
+tbody tr td.h.set{background:#dbe7f5} tbody tr td.h.auto{background:#f1f5fa;color:#5b7aa3;font-weight:400;font-style:italic} #popH .n{font-size:11px;color:var(--mut);margin-top:6px} tr.ms:last-of-type td{border-bottom:2px solid var(--blue)}
 #popH{position:absolute;z-index:10;display:none;width:220px;background:#fff;border:1px solid var(--line);border-top:3px solid var(--blue);box-shadow:0 6px 20px rgba(0,0,0,.15);padding:10px;font-size:13px}
 #popH .t{font-weight:700;color:var(--blue);margin-bottom:8px;font-size:12px} #popH input{width:100%;padding:5px;font:inherit;border:1px solid var(--line)}
 #popH button{margin-top:8px;padding:6px 10px;border:1px solid var(--line);background:#fff;cursor:pointer;font:inherit;font-size:12px}
@@ -58,7 +58,7 @@ tbody tr td.h.set{background:#dbe7f5} tr.ms:last-of-type td{border-bottom:2px so
 <button class="s" data-s="wip"><i style="background:var(--wip)"></i>Đang thi công</button>
 <button class="s" data-s="done"><i style="background:var(--ok)"></i>Done</button>
 <div class="row"><label>% xong<input type="number" id="popP" min="0" max="100" step="5" placeholder="%"></label><label style="flex:1">Deadline<input type="date" id="popD"></label></div></div>
-<div id="popH"><div class="t" id="popHT"></div><input type="date" id="popHD"><button id="popHX">Xóa ngày</button></div>
+<div id="popH"><div class="t" id="popHT"></div><input type="date" id="popHD"><div class="n" id="popHN"></div><button id="popHX">Xóa ngày</button></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script>
 const SUPABASE_URL='https://klglmrnuqgurtnyflyju.supabase.co';
@@ -92,6 +92,11 @@ function paintUpd(){
   let m=null;for(const v of state.values()){const d=new Date(v.updated_at);if(!m||d>m)m=d}
   const u=document.getElementById('upd');if(u)u.textContent=m?fmt(m):'chưa có cập nhật';
 }
+const addDays=(iso,n)=>{const d=new Date(iso+'T00:00:00Z');d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10)};
+const dmy=iso=>iso.split('-').reverse().join('/');
+// ngày mặc định của mốc tính từ mốc khác (vd tường xây = mặt bằng + 14 ngày)
+function autoDate(m,lid){if(!m.base_id)return null;const b=effDate(miles.find(x=>x.id===m.base_id),lid).date;return b?addDays(b,m.offset_days||0):null}
+function effDate(m,lid){const d=hand.get(`${m.id}:${lid}`);return d?{date:d,auto:false}:{date:autoDate(m,lid),auto:true}}
 // Căn có ngày bàn giao mốc đầu tiên lên trước, sớm trước muộn sau; cùng ngày hoặc chưa có ngày thì theo thứ tự căn
 function sortedLocs(code){
   const m0=miles[0]?.id;
@@ -108,9 +113,11 @@ function renderArea(i){
     L.map(l=>`<th class="v">${esc(l.name)}</th>`).join('')+'</tr></thead><tbody>';
   miles.forEach((m,j)=>{
     const gd=j?'':`<td class="gd ms" rowspan="${miles.length}" title="XD bàn giao">${miles.length>2?'<span>XD BÀN GIAO</span>':'XD'}</td>`;
-    const n=L.filter(l=>hand.get(`${m.id}:${l.id}`)).length;
+    const n=L.filter(l=>effDate(m,l.id).date).length;
     h+=`<tr class="ms" data-m="${m.id}"><td class="stt"></td>${gd}<td class="nm">${esc(m.name)}</td><td></td><td class="cnt">${n}/${L.length}</td>`+
-      L.map(l=>{const d=hand.get(`${m.id}:${l.id}`);return `<td class="h${d?' set':''}" data-h="${m.id}:${l.id}" title="${d?'Nhận bàn giao '+d.split('-').reverse().join('/'):'Bấm để điền ngày nhận bàn giao'}">${ddmm(d)}</td>`}).join('')+'</tr>';
+      L.map(l=>{const {date:d,auto}=effDate(m,l.id);const cls=d?(auto?' auto':' set'):'';
+        const tt=d?(auto?`Mặc định ${dmy(d)} (${miles.find(x=>x.id===m.base_id).name.toLowerCase()} + ${m.offset_days} ngày) · bấm để sửa`:'Nhận bàn giao '+dmy(d)):'Bấm để điền ngày nhận bàn giao';
+        return `<td class="h${cls}" data-h="${m.id}:${l.id}" title="${tt}">${ddmm(d)}</td>`}).join('')+'</tr>';
   });
   T.forEach((t,j)=>{
     let gd='';
@@ -148,10 +155,14 @@ function onHandClick(e){
   closePop();curH=td.dataset.h;openedAt=Date.now();
   const [mid,lid]=curH.split(':').map(Number);
   document.getElementById('popHT').textContent=`${locs.find(x=>x.id===lid).name} · ${miles.find(x=>x.id===mid).name}`;
-  popHD.value=hand.get(curH)||'';placePop(popH,td);popHD.focus();
+  const m=miles.find(x=>x.id===mid),ef=effDate(m,lid),def=autoDate(m,lid);popHD.value=ef.date||'';
+  document.getElementById('popHN').textContent=m.base_id?(def?`Mặc định: ${dmy(def)} (${miles.find(x=>x.id===m.base_id).name.toLowerCase()} + ${m.offset_days} ngày)${ef.auto?'':' · đang dùng ngày sửa tay'}`:`Mặc định = ${miles.find(x=>x.id===m.base_id).name.toLowerCase()} + ${m.offset_days} ngày`):'';
+  const x=document.getElementById('popHX');x.textContent=m.base_id?'Về mặc định':'Xóa ngày';x.disabled=m.base_id?ef.auto:!ef.date;
+  placePop(popH,td);popHD.focus();
 }
 function closeH(){popH.style.display='none';curH=null}
-popHD.onchange=()=>{if(curH)setHand(curH,popHD.value||null)};
+popHD.onchange=()=>{if(!curH)return;const [mid,lid]=curH.split(':').map(Number),def=autoDate(miles.find(x=>x.id===mid),lid);
+  setHand(curH,popHD.value&&popHD.value!==def?popHD.value:null)}; // trùng ngày mặc định thì không lưu riêng
 document.getElementById('popHX').onclick=()=>{if(curH){setHand(curH,null);closeH()}};
 document.addEventListener('mousedown',e=>{if(curH&&!popH.contains(e.target)&&!e.target.closest('td.h'))closeH()});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeH()});
@@ -161,7 +172,7 @@ async function setHand(k,date){
   if((prev||null)===date)return;
   if(date)hand.set(k,date);else hand.delete(k);
   const keep=curH;rerenderLoc(location_id);
-  if(keep&&date){const td=document.querySelector(`td.h[data-h="${keep}"]`);if(td){curH=keep;openedAt=Date.now();placePop(popH,td)}}
+  if(keep){const td=document.querySelector(`td.h[data-h="${keep}"]`);if(td)onHandClick({target:td})}
   handBusy.add(k);
   const r=date
     ?await sb.from('handovers').upsert({milestone_id,location_id,date,updated_at:new Date().toISOString()})

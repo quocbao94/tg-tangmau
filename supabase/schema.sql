@@ -179,3 +179,8 @@ update milestones set before_stage='SAU XÂY TƯỜNG' where name='Bàn giao tư
 insert into milestones (name,sort,base_id,offset_days,before_stage)
 select 'Bàn giao tô tường',3,id,14,'SAU TÔ TƯỜNG' from milestones where name='Bàn giao tường xây'
 on conflict (name) do nothing;
+
+-- Dòng "Vị trí" hiển thị dưới tiêu đề và trên file PDF
+alter table areas add column if not exists location_label text;
+update areas set location_label='TẦNG MẪU – TẦNG 5 THÁP B (23 căn: CH 01–18, CH 39–43)' where code='can_ho';
+update areas set location_label='TẦNG MẪU – TẦNG 5 THÁP B – HÀNH LANG' where code='hanh_lang';

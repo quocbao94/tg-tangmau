@@ -113,7 +113,7 @@ insert into tasks (area_code,stt,stage,discipline,name,seq) values
   ('can_ho',24,'SAU TÔ TƯỜNG','ctn','Lắp đặt trục thoát nước logia',8),
   ('hanh_lang',1,'TRƯỚC XÂY TƯỜNG','ctn','Lắp đặt nước cấp hành lang',1),
   ('hanh_lang',2,'TRƯỚC XÂY TƯỜNG','pccc','Ống chữa cháy hành lang',2),
-  ('hanh_lang',3,'TRƯỚC XÂY TƯỜNG','dien','Lắp đặt máng cáp hành lang',3),
+  ('hanh_lang',3,'SAU XÂY TƯỜNG','dien','Lắp đặt máng cáp hành lang',3),
   ('hanh_lang',4,'SAU XÂY TƯỜNG','dhkk','Lắp đặt ống gió/Van gió layout hành lang',4),
   ('hanh_lang',5,'SAU XÂY TƯỜNG','dhkk','Lắp đặt ống gió trục đứng hành lang',5),
   ('hanh_lang',6,'SAU XÂY TƯỜNG','dhkk','Test ống gió trục đứng hành lang',6),

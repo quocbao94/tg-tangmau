@@ -18,7 +18,8 @@ body{margin:0;font-family:"Segoe UI",Roboto,Arial,Helvetica,sans-serif;backgroun
 header{flex:none}
 header{display:flex;align-items:center;gap:14px;padding:8px 24px;background:#fff;border-bottom:3px solid var(--red);box-shadow:0 1px 4px rgba(0,0,0,.06)}
 header img{height:24px;display:block}
-header .ttl{padding-left:14px;border-left:1px solid var(--line)}
+header .ttl,.phead .ttl{flex:1;min-width:0;padding-left:14px;border-left:1px solid var(--line)}
+.r1{display:flex;align-items:baseline;justify-content:space-between;gap:12px} .date{font-size:11px;font-weight:700;color:var(--blue);white-space:nowrap}
 header h1{margin:0;font-size:15px;font-weight:800;letter-spacing:.3px;color:var(--blue)}
 .info{display:flex;flex-wrap:wrap;gap:2px 18px;margin-top:2px;font-size:11px;font-weight:700;color:var(--blue)} .info span b{color:var(--red)}
 nav{align-items:flex-end} nav button.pdf{margin-left:auto;border:1px solid var(--red);border-radius:4px;background:var(--red);color:#fff;margin-bottom:4px}
@@ -60,26 +61,26 @@ tbody tr td.h.set,tbody tr td.h.auto{background:#dbe7f5} #popH .n{font-size:11px
 #popH .t{font-weight:700;color:var(--blue);margin-bottom:8px;font-size:12px} #popH input{width:100%;padding:5px;font:inherit;border:1px solid var(--line)}
 #popH button{margin-top:8px;padding:6px 10px;border:1px solid var(--line);background:#fff;cursor:pointer;font:inherit;font-size:12px}
 #msg{padding:16px 0;color:var(--mut)} #msg.err{color:var(--red)}
-@media (max-width:640px){header{padding:12px 16px;gap:12px} header img{height:20px} header h1{font-size:12px} header .ttl{padding-left:10px} .info{font-size:10px;gap:0 10px} main{padding:10px 12px 12px}}
+@media (max-width:640px){header{padding:8px 12px;gap:10px} .date{font-size:10px} header img{height:20px} header h1{font-size:12px} header .ttl{padding-left:10px} .info{font-size:10px;gap:0 10px} main{padding:10px 12px 12px}}
 @media print{
   html,body{height:auto;overflow:visible;display:block;background:#fff}
   *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   body>header,nav,#pop,#popH,#msg{display:none!important}
   main{padding:0;display:block} #tabs{display:block}
-  .tab,.tab.on{display:block!important;break-after:page} .tab:last-child{break-after:auto}
-  .phead{display:flex;align-items:center;gap:14px;padding:0 0 6px;margin-bottom:6px;border-bottom:3px solid var(--red)}
-  .phead img{height:30px} .phead h1{margin:0;font-size:17px;font-weight:800;color:var(--blue)}
-  .phead .info{display:block;font-size:11px;margin-top:3px} .phead .info span{display:block}
-  .wrap{overflow:visible;max-height:none;border:1px solid var(--line);border-top:3px solid var(--blue)}
-  table{font-size:10px;width:auto} th,td{padding:3px 4px}
-  thead th,th.nm,td.nm{position:static}
-  th.nm,td.nm{min-width:0;width:210px;white-space:normal} th.v,td.v,td.h{min-width:0;width:auto;height:auto} td.seq{min-width:0}
-  thead th{white-space:normal;font-size:9.5px} td.gd{width:22px}
-  tr{break-inside:avoid}
-  th.v,td.v,td.h{min-width:42px}
-  .wrap{display:inline-block;max-width:100%}
+  /* mỗi tab = 1 trang A3 ngang; bảng giãn lấp đầy trang */
+  .tab,.tab.on{display:flex!important;flex-direction:column;height:277mm;break-after:page;overflow:hidden} .tab:last-child{break-after:auto}
+  .phead{display:flex;flex:none;align-items:center;gap:12px;padding:0 0 4px;margin-bottom:5px;border-bottom:2px solid var(--red)}
+  .phead img{height:22px} .phead h1{margin:0;font-size:14px;font-weight:800;color:var(--blue)} .phead .ttl{padding-left:12px}
+  .phead .info{display:flex;gap:0 18px;font-size:10px;margin-top:1px} .phead .date{font-size:10px}
+  .wrap{flex:1 1 auto;min-height:0;overflow:visible;max-height:none;border:1px solid var(--line);border-top:3px solid var(--blue)}
+  table{font-size:11px;width:100%;height:100%;table-layout:auto} th,td{padding:2px 4px}
+  thead th,th.nm,td.nm{position:static} thead tr{height:24px}
+  th.nm,td.nm{min-width:0;width:250px;white-space:normal} th.v,td.v,td.h{min-width:0;height:auto} td.seq{min-width:0}
+  thead th{white-space:normal;font-size:10px} td.gd{width:24px}
+  th.stt,td.stt{width:32px} th.gd,td.gd{width:24px} th.seq,td.seq{width:52px} th.cnt,td.cnt{width:52px}
+  td.v small{font-size:9.5px}
 }
-</style></head><body><header><img src="assets/ricons-logo.png" alt="Ricons"><div class="ttl"><h1>THE GIÓ RIVERSIDE – TRACKING MEP TẦNG MẪU</h1><div class="info" id="info"></div></div></header>
+</style></head><body><header><img src="assets/ricons-logo.png" alt="Ricons"><div class="ttl"><div class="r1"><h1>THE GIÓ RIVERSIDE – TRACKING MEP TẦNG MẪU</h1><span class="date"></span></div><div class="info" id="info"></div></div></header>
 <main><nav id="nav"></nav><div id="msg">Đang tải dữ liệu…</div><div id="tabs"></div></main>
 <div id="pop"><div class="t" id="popT"></div>
 <button class="s" data-s=""><i></i>Chưa thi công</button>
@@ -160,10 +161,10 @@ function renderArea(i){
   wrap.querySelectorAll('td.v').forEach(paintCell);T.forEach(t=>paintCount(t.id));
 }
 const dmyToday=()=>{const d=new Date(),p=n=>String(n).padStart(2,'0');return `${p(d.getDate())}/${p(d.getMonth()+1)}/${d.getFullYear()}`};
-const infoHTML=a=>`<span>HẠNG MỤC: MEP</span><span>VỊ TRÍ: <b>${esc(a.location_label||a.name)}</b></span><span>NGÀY CẬP NHẬT: ${dmyToday()}</span>`;
-function setInfo(i){document.getElementById('info').innerHTML=infoHTML(areas[i])}
+const infoHTML=a=>`<span>HẠNG MỤC: MEP</span><span>VỊ TRÍ: <b>${esc(a.location_label||a.name)}</b></span>`;
+function setInfo(i){document.getElementById('info').innerHTML=infoHTML(areas[i]);document.querySelectorAll('.date').forEach(e=>e.textContent='NGÀY CẬP NHẬT: '+dmyToday())}
 function exportPDF(){
-  document.querySelectorAll('.phead .info').forEach((el,i)=>el.innerHTML=infoHTML(areas[i]));
+  document.querySelectorAll('.phead .info').forEach((el,i)=>el.innerHTML=infoHTML(areas[i]));document.querySelectorAll('.date').forEach(e=>e.textContent='NGÀY CẬP NHẬT: '+dmyToday());
   closePop();closeH();
   const t=document.title;document.title=`TG Tracking MEP - Tang mau - ${dmyToday().replace(/\//g,'_')}`;
   window.print();setTimeout(()=>document.title=t,1000);
@@ -172,7 +173,7 @@ function render(){
   const nav=document.getElementById('nav'),tabs=document.getElementById('tabs');
   areas.forEach((a,i)=>{
     const b=document.createElement('button');b.textContent=a.name;b.dataset.t='t'+i;if(!i)b.className='on';nav.appendChild(b);
-    tabs.insertAdjacentHTML('beforeend',`<section id="t${i}" class="tab${i?'':' on'}"><div class="phead"><img src="assets/ricons-logo.png" alt="Ricons"><div><h1>THE GIÓ RIVERSIDE – TRACKING MEP TẦNG MẪU</h1><div class="info"></div></div></div><div class="wrap"></div></section>`);
+    tabs.insertAdjacentHTML('beforeend',`<section id="t${i}" class="tab${i?'':' on'}"><div class="phead"><img src="assets/ricons-logo.png" alt="Ricons"><div class="ttl"><div class="r1"><h1>THE GIÓ RIVERSIDE – TRACKING MEP TẦNG MẪU</h1><span class="date"></span></div><div class="info"></div></div></div><div class="wrap"></div></section>`);
     renderArea(i);
   });
   nav.querySelectorAll('button[data-t]').forEach((b,i)=>b.onclick=()=>{document.querySelectorAll('nav button[data-t],.tab').forEach(e=>e.classList.remove('on'));b.classList.add('on');document.getElementById(b.dataset.t).classList.add('on');setInfo(i)});

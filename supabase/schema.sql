@@ -142,3 +142,25 @@ revoke update on tasks from anon, authenticated;
 grant update (seq) on tasks to anon, authenticated;
 create policy "edit seq" on tasks for update to anon, authenticated using (true) with check (true);
 alter publication supabase_realtime add table tasks;
+
+-- ===== XD bàn giao =====
+create table if not exists milestones (     -- các mốc bàn giao của XD
+  id    bigint generated always as identity primary key,
+  name  text not null unique,
+  sort  int  not null
+);
+create table if not exists handovers (      -- ngày nhận bàn giao theo từng vị trí
+  milestone_id bigint not null references milestones(id) on delete cascade,
+  location_id  bigint not null references locations(id) on delete cascade,
+  date         date   not null,
+  updated_at   timestamptz not null default now(),
+  primary key (milestone_id, location_id)
+);
+alter table milestones enable row level security;
+alter table handovers  enable row level security;
+create policy "read milestones" on milestones for select using (true);
+create policy "read handovers"  on handovers  for select using (true);
+create policy "write handovers" on handovers  for all to anon, authenticated using (true) with check (true);
+alter publication supabase_realtime add table handovers;
+alter table handovers replica identity full;
+insert into milestones (name,sort) values ('Bàn giao mặt bằng',1) on conflict do nothing;

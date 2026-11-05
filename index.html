@@ -44,6 +44,11 @@ td.v{font-size:11px;line-height:1.15} td.v small{display:block;font-size:10px;fo
 #pop label{display:block;margin-top:8px;font-size:12px;color:var(--mut)}
 #pop input{width:100%;margin-top:3px;padding:5px;font:inherit;border:1px solid var(--line)}
 #pop input:disabled{background:var(--soft)}
+tr.ms td.nm{color:var(--blue)} td.gd.ms{background:#e8eef6} td.h{text-align:center;min-width:56px;cursor:pointer;font-weight:700;font-size:11px;color:var(--blue)} td.h:hover{outline:2px solid var(--blue);outline-offset:-2px}
+tbody tr td.h.set{background:#dbe7f5} tr.ms:last-of-type td{border-bottom:2px solid var(--blue)}
+#popH{position:absolute;z-index:10;display:none;width:220px;background:#fff;border:1px solid var(--line);border-top:3px solid var(--blue);box-shadow:0 6px 20px rgba(0,0,0,.15);padding:10px;font-size:13px}
+#popH .t{font-weight:700;color:var(--blue);margin-bottom:8px;font-size:12px} #popH input{width:100%;padding:5px;font:inherit;border:1px solid var(--line)}
+#popH button{margin-top:8px;padding:6px 10px;border:1px solid var(--line);background:#fff;cursor:pointer;font:inherit;font-size:12px}
 #msg{padding:16px 0;color:var(--mut)} #msg.err{color:var(--red)}
 @media (max-width:640px){header{padding:12px 16px;gap:12px} header img{height:20px} header h1{font-size:12px;padding-left:10px} main{padding:12px 16px}}
 </style></head><body><header><img src="assets/ricons-logo.png" alt="Ricons"><h1>THE GIÓ RIVERSIDE – TRACKING MEP TẦNG MẪU</h1></header>
@@ -53,6 +58,7 @@ td.v{font-size:11px;line-height:1.15} td.v small{display:block;font-size:10px;fo
 <button class="s" data-s="wip"><i style="background:var(--wip)"></i>Đang thi công</button>
 <button class="s" data-s="done"><i style="background:var(--ok)"></i>Done</button>
 <div class="row"><label>% xong<input type="number" id="popP" min="0" max="100" step="5" placeholder="%"></label><label style="flex:1">Deadline<input type="date" id="popD"></label></div></div>
+<div id="popH"><div class="t" id="popHT"></div><input type="date" id="popHD"><button id="popHX">Xóa ngày</button></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script>
 const SUPABASE_URL='https://klglmrnuqgurtnyflyju.supabase.co';
@@ -61,7 +67,8 @@ const sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 const COLOR={dien:'#7030A0',ctn:'#1565C0',dhkk:'#2E7D32',pccc:'#C62828',chung:'#222'};
 const MARK={done:'✓'};
 const state=new Map(); // "taskId:locId" -> {status,deadline,pct,updated_at}
-let tasks=[],locs=[],lastUpd=null;
+let tasks=[],locs=[],areas=[],miles=[],lastUpd=null;
+const hand=new Map(); // "milestoneId:locId" -> date (yyyy-mm-dd)
 
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const fmt=d=>{const p=n=>String(n).padStart(2,'0');return `${p(d.getDate())}/${p(d.getMonth()+1)}/${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`};
@@ -85,25 +92,88 @@ function paintUpd(){
   let m=null;for(const v of state.values()){const d=new Date(v.updated_at);if(!m||d>m)m=d}
   const u=document.getElementById('upd');if(u)u.textContent=m?fmt(m):'chưa có cập nhật';
 }
-function render(areas){
+// Căn có ngày bàn giao mốc đầu tiên lên trước, sớm trước muộn sau; cùng ngày hoặc chưa có ngày thì theo thứ tự căn
+function sortedLocs(code){
+  const m0=miles[0]?.id;
+  return locs.filter(l=>l.area_code===code).sort((x,y)=>{
+    const dx=hand.get(`${m0}:${x.id}`),dy=hand.get(`${m0}:${y.id}`);
+    if(dx&&dy&&dx!==dy)return dx<dy?-1:1;
+    if(!!dx!==!!dy)return dx?-1:1;
+    return x.sort-y.sort;
+  });
+}
+function renderArea(i){
+  const a=areas[i],L=sortedLocs(a.code),T=tasks.filter(t=>t.area_code===a.code);
+  let h='<table><thead><tr><th class="stt">STT</th><th class="gd">GĐ</th><th class="nm">Nội dung công việc</th><th class="seq">Trình tự</th><th class="cnt">Đã xong</th>'+
+    L.map(l=>`<th class="v">${esc(l.name)}</th>`).join('')+'</tr></thead><tbody>';
+  miles.forEach((m,j)=>{
+    const gd=j?'':`<td class="gd ms" rowspan="${miles.length}" title="XD bàn giao">${miles.length>2?'<span>XD BÀN GIAO</span>':'XD'}</td>`;
+    const n=L.filter(l=>hand.get(`${m.id}:${l.id}`)).length;
+    h+=`<tr class="ms" data-m="${m.id}"><td class="stt"></td>${gd}<td class="nm">${esc(m.name)}</td><td></td><td class="cnt">${n}/${L.length}</td>`+
+      L.map(l=>{const d=hand.get(`${m.id}:${l.id}`);return `<td class="h${d?' set':''}" data-h="${m.id}:${l.id}" title="${d?'Nhận bàn giao '+d.split('-').reverse().join('/'):'Bấm để điền ngày nhận bàn giao'}">${ddmm(d)}</td>`}).join('')+'</tr>';
+  });
+  T.forEach((t,j)=>{
+    let gd='';
+    if(j===0||T[j-1].stage!==t.stage){let n=0;while(T[j+n]&&T[j+n].stage===t.stage)n++;gd=`<td class="gd" rowspan="${n}"><span>${esc(t.stage)}</span></td>`}
+    h+=`<tr data-t="${t.id}"><td class="stt">${t.stt}</td>${gd}<td class="nm" style="color:${COLOR[t.discipline]}">${esc(t.name)}</td><td class="seq" title="Bấm để sửa trình tự">${t.seq??''}</td><td class="cnt"></td>`+
+      L.map(l=>`<td class="v" data-k="${t.id}:${l.id}"></td>`).join('')+'</tr>';
+  });
+  const wrap=document.querySelector(`#t${i} .wrap`),sx=wrap.scrollLeft,sy=wrap.scrollTop;
+  wrap.innerHTML=h+'</tbody></table>';wrap.scrollLeft=sx;wrap.scrollTop=sy;
+  wrap.querySelectorAll('td.v').forEach(paintCell);T.forEach(t=>paintCount(t.id));
+}
+function render(){
   const nav=document.getElementById('nav'),tabs=document.getElementById('tabs');
   areas.forEach((a,i)=>{
-    const L=locs.filter(l=>l.area_code===a.code),T=tasks.filter(t=>t.area_code===a.code);
     const b=document.createElement('button');b.textContent=a.name;b.dataset.t='t'+i;if(!i)b.className='on';nav.appendChild(b);
-    let h=`<section id="t${i}" class="tab${i?'':' on'}"><div class="wrap"><table><thead><tr><th class="stt">STT</th><th class="gd">GĐ</th><th class="nm">Nội dung công việc</th><th class="seq">Trình tự</th><th class="cnt">Đã xong</th>`+
-      L.map(l=>`<th class="v">${esc(l.name)}</th>`).join('')+'</tr></thead><tbody>';
-    T.forEach((t,j)=>{
-      let gd='';
-      if(j===0||T[j-1].stage!==t.stage){let n=0;while(T[j+n]&&T[j+n].stage===t.stage)n++;gd=`<td class="gd" rowspan="${n}"><span>${esc(t.stage)}</span></td>`}
-      h+=`<tr data-t="${t.id}"><td class="stt">${t.stt}</td>${gd}<td class="nm" style="color:${COLOR[t.discipline]}">${esc(t.name)}</td><td class="seq" title="Bấm để sửa trình tự">${t.seq??''}</td><td class="cnt"></td>`+
-        L.map(l=>`<td class="v" data-k="${t.id}:${l.id}"></td>`).join('')+'</tr>';
-    });
-    tabs.insertAdjacentHTML('beforeend',h+'</tbody></table></div></section>');
+    tabs.insertAdjacentHTML('beforeend',`<section id="t${i}" class="tab${i?'':' on'}"><div class="wrap"></div></section>`);
+    renderArea(i);
   });
   nav.querySelectorAll('button').forEach(b=>b.onclick=()=>{document.querySelectorAll('nav button,.tab').forEach(e=>e.classList.remove('on'));b.classList.add('on');document.getElementById(b.dataset.t).classList.add('on')});
-  document.querySelectorAll('td.v').forEach(paintCell);
-  tasks.forEach(t=>paintCount(t.id));paintUpd();
-  tabs.addEventListener('click',onClick);tabs.addEventListener('click',onSeqClick);
+  paintUpd();
+  tabs.addEventListener('click',onClick);tabs.addEventListener('click',onSeqClick);tabs.addEventListener('click',onHandClick);
+}
+const rerenderLoc=lid=>{const l=locs.find(x=>x.id===lid);const i=areas.findIndex(a=>a.code===l?.area_code);if(i>=0){closePop();closeH();renderArea(i)}};
+// ----- ô ngày bàn giao -----
+const popH=document.getElementById('popH'),popHD=document.getElementById('popHD');let curH=null;
+function placePop(el,td){
+  const r=td.getBoundingClientRect();el.style.display='block';
+  let x=r.left+scrollX,y=r.bottom+scrollY+4;
+  x=Math.min(x,scrollX+document.documentElement.clientWidth-el.offsetWidth-8);
+  if(r.bottom+el.offsetHeight+8>innerHeight)y=r.top+scrollY-el.offsetHeight-4;
+  el.style.left=Math.max(8,x)+'px';el.style.top=y+'px';
+}
+function onHandClick(e){
+  const td=e.target.closest('td.h');if(!td)return;
+  closePop();curH=td.dataset.h;openedAt=Date.now();
+  const [mid,lid]=curH.split(':').map(Number);
+  document.getElementById('popHT').textContent=`${locs.find(x=>x.id===lid).name} · ${miles.find(x=>x.id===mid).name}`;
+  popHD.value=hand.get(curH)||'';placePop(popH,td);popHD.focus();
+}
+function closeH(){popH.style.display='none';curH=null}
+popHD.onchange=()=>{if(curH)setHand(curH,popHD.value||null)};
+document.getElementById('popHX').onclick=()=>{if(curH){setHand(curH,null);closeH()}};
+document.addEventListener('mousedown',e=>{if(curH&&!popH.contains(e.target)&&!e.target.closest('td.h'))closeH()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeH()});
+const handBusy=new Set();
+async function setHand(k,date){
+  const [milestone_id,location_id]=k.split(':').map(Number),prev=hand.get(k);
+  if((prev||null)===date)return;
+  if(date)hand.set(k,date);else hand.delete(k);
+  const keep=curH;rerenderLoc(location_id);
+  if(keep&&date){const td=document.querySelector(`td.h[data-h="${keep}"]`);if(td){curH=keep;openedAt=Date.now();placePop(popH,td)}}
+  handBusy.add(k);
+  const r=date
+    ?await sb.from('handovers').upsert({milestone_id,location_id,date,updated_at:new Date().toISOString()})
+    :await sb.from('handovers').delete().match({milestone_id,location_id});
+  handBusy.delete(k);
+  if(r.error){if(prev)hand.set(k,prev);else hand.delete(k);rerenderLoc(location_id);alert('Không lưu được: '+r.error.message)}
+}
+function onHandRealtime(p){
+  const row=p.eventType==='DELETE'?p.old:p.new,k=`${row.milestone_id}:${row.location_id}`;
+  if(handBusy.has(k))return;
+  if(p.eventType==='DELETE')hand.delete(k);else hand.set(k,row.date);
+  if(curH!==k)rerenderLoc(row.location_id);
 }
 const pop=document.getElementById('pop'),popD=document.getElementById('popD'),popP=document.getElementById('popP');let cur=null;
 function openPop(td){
@@ -112,18 +182,14 @@ function openPop(td){
   document.getElementById('popT').textContent=`${l.name} · ${t.name}`;
   pop.querySelectorAll('button.s').forEach(b=>b.classList.toggle('on',b.dataset.s===(v?.status||'')));
   popD.value=v?.deadline||'';popP.value=v?.pct??'';popD.disabled=popP.disabled=v?.status!=='wip';
-  const r=td.getBoundingClientRect();pop.style.display='block';
-  let x=r.left+scrollX,y=r.bottom+scrollY+4;
-  x=Math.min(x,scrollX+document.documentElement.clientWidth-pop.offsetWidth-8);
-  if(r.bottom+pop.offsetHeight+8>innerHeight)y=r.top+scrollY-pop.offsetHeight-4;
-  pop.style.left=Math.max(8,x)+'px';pop.style.top=y+'px';
+  closeH();placePop(pop,td);
 }
 function closePop(){pop.style.display='none';cur=null}
 function onClick(e){const td=e.target.closest('td.v');if(td)openPop(td)}
 document.addEventListener('mousedown',e=>{if(cur&&!pop.contains(e.target)&&!e.target.closest('td.v'))closePop()});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closePop()});
 let openedAt=0;
-document.addEventListener('scroll',e=>{if(cur&&Date.now()-openedAt>400&&e.target!==document&&!pop.contains(e.target))closePop()},true);
+document.addEventListener('scroll',e=>{if(Date.now()-openedAt>400&&e.target!==document&&!pop.contains(e.target)&&!popH.contains(e.target)){if(cur)closePop();if(curH)closeH()}},true);
 pop.querySelectorAll('button.s').forEach(b=>b.onclick=()=>{
   const st=b.dataset.s,td=cur;
   if(st==='wip'){const o=state.get(td.dataset.k);setCell(td,{status:'wip',deadline:o?.status==='wip'?o.deadline:null,pct:o?.status==='wip'?o.pct:null});openPop(td);popP.focus()}
@@ -188,15 +254,18 @@ function onRealtime(p){
 (async()=>{
   const msg=document.getElementById('msg');
   try{
-    const [a,l,t,p]=await Promise.all([
+    const [a,l,t,p,m,h]=await Promise.all([
       sb.from('areas').select('*').order('sort'),
       sb.from('locations').select('*').order('sort'),
       sb.from('tasks').select('*').order('stt'),
-      sb.from('progress').select('task_id,location_id,status,deadline,pct,updated_at')]);
-    const err=[a,l,t,p].find(r=>r.error);if(err)throw err.error;
+      sb.from('progress').select('task_id,location_id,status,deadline,pct,updated_at'),
+      sb.from('milestones').select('*').order('sort'),
+      sb.from('handovers').select('milestone_id,location_id,date')]);
+    const err=[a,l,t,p,m,h].find(r=>r.error);if(err)throw err.error;
+    areas=a.data;miles=m.data;h.data.forEach(r=>hand.set(`${r.milestone_id}:${r.location_id}`,r.date));
     locs=l.data;tasks=t.data;p.data.forEach(r=>state.set(`${r.task_id}:${r.location_id}`,r));
-    msg.remove();render(a.data);
-    sb.channel('progress').on('postgres_changes',{event:'*',schema:'public',table:'progress'},onRealtime).on('postgres_changes',{event:'UPDATE',schema:'public',table:'tasks'},onTaskRealtime).subscribe();
+    msg.remove();render();
+    sb.channel('progress').on('postgres_changes',{event:'*',schema:'public',table:'progress'},onRealtime).on('postgres_changes',{event:'UPDATE',schema:'public',table:'tasks'},onTaskRealtime).on('postgres_changes',{event:'*',schema:'public',table:'handovers'},onHandRealtime).subscribe();
   }catch(e){msg.className='err';msg.textContent='Không tải được dữ liệu: '+(e.message||e)}
 })();
 </script>

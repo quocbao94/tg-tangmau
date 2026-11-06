@@ -40,6 +40,8 @@ table{border-collapse:collapse;font-size:12px} th,td{border:1px solid var(--line
 thead th{position:sticky;top:0;background:var(--blue);color:#fff;font-weight:700;z-index:2;white-space:nowrap}
 th.nm,td.nm{position:sticky;left:0;background:#fff;min-width:280px;text-align:left;font-weight:700;z-index:1}
 thead th.nm{z-index:3;background:var(--blue)}
+thead tr.zr th.z{height:22px;background:var(--blue-d);font-size:11px;letter-spacing:.5px;text-align:center;border-bottom:1px solid #4d76a8} thead tr.lr th{top:23px}
+[data-zs]{border-left:2px solid var(--blue)!important}
 td.stt,td.cnt,td.seq{text-align:center;color:var(--mut)} td.seq{font-weight:700;color:var(--blue);cursor:text;min-width:62px} td.seq:hover{outline:2px solid var(--blue);outline-offset:-2px} td.seq input{width:44px;padding:2px;font:inherit;font-weight:700;text-align:center;border:1px solid var(--blue)} td.cnt{font-weight:700;color:var(--fg)}
 td.gd{background:var(--soft);color:var(--blue);text-align:center;font-weight:800;font-size:11px;width:30px} td.gd span{writing-mode:vertical-rl;transform:rotate(180deg)}
 tbody tr:hover td:not(.gd):not(.v){background-color:#f9fbfd} tbody tr:hover td.nm{background:#f9fbfd}
@@ -139,6 +141,7 @@ function effDate(m,lid){const d=hand.get(`${m.id}:${lid}`);return d?{date:d,auto
 function sortedLocs(code){
   const m0=miles[0]?.id;
   return locs.filter(l=>l.area_code===code).sort((x,y)=>{
+    const zc=(x.zone||'').localeCompare(y.zone||'',undefined,{numeric:true});if(zc)return zc; // giữ nguyên nhóm zone
     const dx=hand.get(`${m0}:${x.id}`),dy=hand.get(`${m0}:${y.id}`);
     if(dx&&dy&&dx!==dy)return dx<dy?-1:1;
     if(!!dx!==!!dy)return dx?-1:1;
@@ -147,15 +150,21 @@ function sortedLocs(code){
 }
 function renderArea(i){
   const a=areas[i],L=sortedLocs(a.code),T=tasks.filter(t=>t.area_code===a.code);
-  let h='<table><thead><tr><th class="stt">STT</th><th class="gd">GĐ</th><th class="nm">Nội dung công việc</th><th class="seq">Trình tự</th><th class="cnt">Đã xong</th>'+
-    L.map(l=>`<th class="v">${esc(l.name)}</th>`).join('')+'</tr></thead><tbody>';
+  const zs=new Set(L.filter((l,i)=>i>0&&l.zone!==L[i-1].zone).map(l=>l.id)),za=l=>zs.has(l.id)?' data-zs':'',Z=L.some(l=>l.zone);
+  const fixed=r=>`<th class="stt"${r}>STT</th><th class="gd"${r}>GĐ</th><th class="nm"${r}>Nội dung công việc</th><th class="seq"${r}>Trình tự</th><th class="cnt"${r}>Đã xong</th>`;
+  let h='<table><thead>';
+  if(Z){ // hàng nhóm zone phía trên tên căn
+    const groups=[];L.forEach(l=>{const g=groups[groups.length-1];if(g&&g.z===l.zone)g.n++;else groups.push({z:l.zone,n:1,l})});
+    h+='<tr class="zr">'+fixed(' rowspan="2"')+groups.map(g=>`<th class="z" colspan="${g.n}"${za(g.l)}>${esc(g.z||'')}</th>`).join('')+'</tr><tr class="lr">';
+  }else h+='<tr>'+fixed('');
+  h+=L.map(l=>`<th class="v"${za(l)}>${esc(l.name)}</th>`).join('')+'</tr></thead><tbody>';
   const msRows=list=>{let h='';list.forEach((m,j)=>{
     const gd=j?'':`<td class="gd ms" rowspan="${list.length}" title="XD bàn giao">${list.length>2?'<span>XD BÀN GIAO</span>':'XD'}</td>`;
     const n=L.filter(l=>effDate(m,l.id).date).length;
     h+=`<tr class="ms" data-m="${m.id}"><td class="stt"></td>${gd}<td class="nm">${esc(m.name)}</td><td></td><td class="cnt">${n}/${L.length}</td>`+
       L.map(l=>{const {date:d,auto}=effDate(m,l.id);const cls=d?(auto?' auto':' set'):'';
         const tt=d?(auto?`Mặc định ${dmy(d)} (${miles.find(x=>x.id===m.base_id).name.toLowerCase()} + ${m.offset_days} ngày) · bấm để sửa`:'Nhận bàn giao '+dmy(d)):'Bấm để điền ngày nhận bàn giao';
-        return `<td class="h${cls}" data-h="${m.id}:${l.id}" title="${tt}">${ddmm(d)}</td>`}).join('')+'</tr>';
+        return `<td class="h${cls}" data-h="${m.id}:${l.id}"${za(l)} title="${tt}">${ddmm(d)}</td>`}).join('')+'</tr>';
   });return h};
   const M=miles.filter(m=>!m.area_code||m.area_code===a.code); // mốc của khu vực này
   h+=msRows(M.filter(m=>!m.before_stage));
@@ -164,7 +173,7 @@ function renderArea(i){
     if(j===0||T[j-1].stage!==t.stage)h+=msRows(M.filter(m=>m.before_stage===t.stage));
     if(j===0||T[j-1].stage!==t.stage){let n=0;while(T[j+n]&&T[j+n].stage===t.stage)n++;gd=`<td class="gd" rowspan="${n}"><span>${esc(t.stage)}</span></td>`}
     h+=`<tr data-t="${t.id}"><td class="stt">${t.stt}</td>${gd}<td class="nm" style="color:${COLOR[t.discipline]}">${esc(t.name)}</td><td class="seq" title="Bấm để sửa trình tự">${t.seq??''}</td><td class="cnt"></td>`+
-      L.map(l=>`<td class="v" data-k="${t.id}:${l.id}"></td>`).join('')+'</tr>';
+      L.map(l=>`<td class="v" data-k="${t.id}:${l.id}"${za(l)}></td>`).join('')+'</tr>';
   });
   const wrap=document.querySelector(`#t${i} .wrap`),sx=wrap.scrollLeft,sy=wrap.scrollTop;
   wrap.innerHTML=h+'</tbody></table>';wrap.scrollLeft=sx;wrap.scrollTop=sy;

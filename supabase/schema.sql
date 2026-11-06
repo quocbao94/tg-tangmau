@@ -191,3 +191,12 @@ insert into locations (area_code,name,sort) values ('hanh_lang','ZONE 4',4) on c
 alter table milestones add column if not exists area_code text references areas(code);
 insert into milestones (name,sort,before_stage,area_code)
 values ('Bàn giao sơn lớp 1',4,'SAU SƠN LỚP 1','hanh_lang') on conflict (name) do nothing;
+
+-- Nhóm căn hộ theo zone
+alter table locations add column if not exists zone text;
+update locations l set zone=v.z from (values
+  ('ZONE 1',array['CH 02','CH 03','CH 04','CH 05','CH 06','CH 07','CH 08']),
+  ('ZONE 2',array['CH 01','CH 09','CH 10','CH 11']),
+  ('ZONE 3',array['CH 12','CH 13','CH 14','CH 43']),
+  ('ZONE 4',array['CH 15','CH 16','CH 17','CH 18','CH 39','CH 40','CH 41','CH 42'])
+) v(z,names) where l.area_code='can_ho' and l.name=any(v.names);

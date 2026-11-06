@@ -96,7 +96,7 @@ insert into tasks (area_code,stt,stage,discipline,name,seq) values
   ('can_ho',7,'TRƯỚC XÂY TƯỜNG','ctn','Test hệ thống ống thoát căn hộ',3),
   ('can_ho',8,'TRƯỚC XÂY TƯỜNG','dhkk','Lắp đặt trục đứng nước ngưng',1),
   ('can_ho',9,'TRƯỚC XÂY TƯỜNG','dhkk','Lắp đặt ống nước ngưng trong căn hộ',2),
-  ('can_ho',10,'TRƯỚC XÂY TƯỜNG','pccc','Lắp đặt ống chữa cháy căn hộ',2),
+  ('can_ho',10,'SAU XÂY TƯỜNG','pccc','Lắp đặt ống chữa cháy căn hộ',2),
   ('can_ho',11,'SAU XÂY TƯỜNG','dhkk','Lắp đặt ống hút bếp, hút toilet căn hộ',3),
   ('can_ho',12,'SAU XÂY TƯỜNG','chung','Marking toàn bộ Mep âm tường',4),
   ('can_ho',13,'SAU XÂY TƯỜNG','chung','Cắt, đục tường toàn bộ Mep âm tường',5),

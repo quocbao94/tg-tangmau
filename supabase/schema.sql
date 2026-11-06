@@ -184,3 +184,10 @@ on conflict (name) do nothing;
 alter table areas add column if not exists location_label text;
 update areas set location_label='TẦNG MẪU – TẦNG 5 THÁP B (23 căn: CH 01–18, CH 39–43)' where code='can_ho';
 update areas set location_label='TẦNG MẪU – TẦNG 5 THÁP B – HÀNH LANG' where code='hanh_lang';
+
+-- Hành lang thêm ZONE 4
+insert into locations (area_code,name,sort) values ('hanh_lang','ZONE 4',4) on conflict do nothing;
+-- Mốc chỉ áp dụng cho một khu vực (null = mọi khu vực)
+alter table milestones add column if not exists area_code text references areas(code);
+insert into milestones (name,sort,before_stage,area_code)
+values ('Bàn giao sơn lớp 1',4,'SAU SƠN LỚP 1','hanh_lang') on conflict (name) do nothing;

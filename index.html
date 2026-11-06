@@ -210,7 +210,7 @@ function onHandClick(e){
   const x=document.getElementById('popHX');x.textContent=m.base_id?'Về mặc định':'Xóa ngày';x.disabled=m.base_id?ef.auto:!ef.date;
   placePop(popH,td);popHD.focus();
 }
-function closeH(){popH.style.display='none';curH=null}
+function closeH(){if(popH.contains(document.activeElement))document.activeElement.blur();popH.style.display='none';curH=null}
 popHD.onchange=()=>{if(!curH)return;const [mid,lid]=curH.split(':').map(Number),def=autoDate(miles.find(x=>x.id===mid),lid);
   setHand(curH,popHD.value&&popHD.value!==def?popHD.value:null)}; // trùng ngày mặc định thì không lưu riêng
 document.getElementById('popHX').onclick=()=>{if(curH){setHand(curH,null);closeH()}};
@@ -245,7 +245,7 @@ function openPop(td){
   popD.value=v?.deadline||'';popP.value=v?.pct??'';popD.disabled=popP.disabled=v?.status!=='wip';
   closeH();placePop(pop,td);
 }
-function closePop(){pop.style.display='none';cur=null}
+function closePop(){if(pop.contains(document.activeElement))document.activeElement.blur();pop.style.display='none';cur=null}
 function onClick(e){if(e.target===fh)return;const td=e.target.closest('td.v');if(td){select(td);openPop(td)}}
 document.addEventListener('mousedown',e=>{if(cur&&!pop.contains(e.target)&&!e.target.closest('td.v'))closePop()});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closePop()});
@@ -397,6 +397,23 @@ async function saveH(keys){
     if(!g.error){keys.forEach(k=>hand.delete(k));g.data.forEach(r=>hand.set(`${r.milestone_id}:${r.location_id}`,r.date))}
     rerenderLoc(+keys[0].split(':')[1]);alert('Không lưu được: '+err.error.message)}
 }
+// --- phím Delete / Backspace: xóa nội dung ô đang chọn ---
+addEventListener('keydown',e=>{
+  if((e.key!=='Delete'&&e.key!=='Backspace')||!selKey||e.ctrlKey||e.metaKey||e.altKey)return;
+  if(e.target.closest('input,textarea,select,[contenteditable]'))return; // đang gõ trong ô nhập thì để yên
+  const td=cellOf(selType,selKey);if(!td)return;
+  e.preventDefault();closePop();closeH();
+  if(selType==='v'){
+    const k=selKey,prev=state.get(k);if(!prev)return;
+    state.delete(k);repaintV([k]);saveV([k]);
+    toast('Đã xóa nội dung ô',()=>{state.set(k,prev);repaintV([k]);saveV([k])});
+  }else{
+    const k=selKey,prev=hand.get(k),[mid,lid]=k.split(':').map(Number),m=miles.find(x=>x.id===mid);
+    if(!prev){if(m.base_id&&autoDate(m,lid))toast('Ô đang dùng ngày mặc định, không có gì để xóa');return}
+    hand.delete(k);rerenderLoc(lid);saveH([k]);
+    toast(m.base_id?'Đã xóa ngày sửa tay, về ngày mặc định':'Đã xóa ngày bàn giao',()=>{hand.set(k,prev);rerenderLoc(lid);saveH([k])});
+  }
+});
 // --- thông báo + hoàn tác ---
 let toastTimer=0;
 function toast(msg,undo){

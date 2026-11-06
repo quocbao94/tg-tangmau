@@ -72,6 +72,7 @@ td.fillr{outline:2px dashed var(--blue);outline-offset:-3px}
 body.filling,body.filling *{cursor:crosshair!important;user-select:none}
 #toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);display:none;align-items:center;gap:14px;background:#1f2937;color:#fff;padding:9px 16px;border-radius:6px;font-size:13px;z-index:30;box-shadow:0 6px 20px rgba(0,0,0,.25)}
 #toast button{background:none;border:0;padding:0;color:#9cc3ff;font:inherit;font-weight:700;cursor:pointer}
+td.gd.sh{font-size:8px;line-height:1.15;white-space:normal;word-spacing:30px;padding:2px 1px}
 #msg{padding:16px 0;color:var(--mut)} #msg.err{color:var(--red)}
 @media (max-width:640px){header{padding:8px 12px;gap:10px} .date{font-size:10px} header img{height:20px} header h1{font-size:12px} header .ttl{padding-left:10px} .info{font-size:10px;gap:0 10px} main{padding:10px 12px 12px}}
 @media print{
@@ -174,7 +175,7 @@ function renderArea(i){
   T.forEach((t,j)=>{
     let gd='';
     if(j===0||T[j-1].stage!==t.stage)h+=msRows(M.filter(m=>m.before_stage===t.stage));
-    if(j===0||T[j-1].stage!==t.stage){let n=0;while(T[j+n]&&T[j+n].stage===t.stage)n++;gd=`<td class="gd" rowspan="${n}"><span>${esc(t.stage)}</span></td>`}
+    if(j===0||T[j-1].stage!==t.stage){let n=0;while(T[j+n]&&T[j+n].stage===t.stage)n++;gd=n>2?`<td class="gd" rowspan="${n}"><span>${esc(t.stage)}</span></td>`:`<td class="gd sh" rowspan="${n}" title="${esc(t.stage)}">${esc(t.stage)}</td>`} // nhóm ít dòng: chữ ngang nhỏ
     h+=`<tr data-t="${t.id}"><td class="stt">${t.stt}</td>${gd}<td class="nm" style="color:${COLOR[t.discipline]}">${esc(t.name)}</td><td class="seq" title="Bấm để sửa trình tự">${t.seq??''}</td><td class="cnt"></td>`+
       L.map(l=>`<td class="v" data-k="${t.id}:${l.id}"${za(l)}></td>`).join('')+'</tr>';
   });

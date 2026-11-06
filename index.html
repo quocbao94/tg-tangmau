@@ -36,11 +36,14 @@ nav button:first-child{border-radius:4px 0 0 0} nav button[data-t]:nth-last-chil
 nav button.on{background:var(--blue);color:#fff}
 .tab{display:none} .tab.on{display:flex;flex-direction:column;flex:1;min-height:0}
 .wrap{overflow:auto;flex:0 1 auto;min-height:0;background:#fff;border:1px solid var(--line);border-top:3px solid var(--blue)}
-table{border-collapse:collapse;font-size:12px} th,td{border:1px solid var(--line);padding:5px 7px}
-thead th{position:sticky;top:0;background:var(--blue);color:#fff;font-weight:700;z-index:2;white-space:nowrap}
+/* viền riêng từng ô (không gộp) để hàng/cột ghim không lộ khe khi cuộn */
+table{border-collapse:separate;border-spacing:0;font-size:12px} th,td{border:0;border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:5px 7px}
+thead th{border-right-color:#3d6aa3;border-bottom-color:#3d6aa3}
+thead{position:sticky;top:0;z-index:4} /* ghim nguyên khối tiêu đề, các hàng đi liền nhau */
+thead th{background:var(--blue);color:#fff;font-weight:700;white-space:nowrap}
 th.nm,td.nm{position:sticky;left:0;background:#fff;min-width:280px;text-align:left;font-weight:700;z-index:1}
 thead th.nm{z-index:3;background:var(--blue)}
-thead tr.zr th.z{height:22px;background:var(--blue-d);font-size:11px;letter-spacing:.5px;text-align:center;border-bottom:1px solid #4d76a8} thead tr.lr th{top:23px}
+thead tr.zr th.z{height:22px;background:var(--blue-d);font-size:11px;letter-spacing:.5px;text-align:center;border-bottom:1px solid #4d76a8}
 [data-zs]{border-left:2px solid var(--blue)!important}
 td.stt,td.cnt,td.seq{text-align:center;color:var(--mut)} td.seq{font-weight:700;color:var(--blue);cursor:text;min-width:62px} td.seq:hover{outline:2px solid var(--blue);outline-offset:-2px} td.seq input{width:44px;padding:2px;font:inherit;font-weight:700;text-align:center;border:1px solid var(--blue)} td.cnt{font-weight:700;color:var(--fg)}
 td.gd{background:var(--soft);color:var(--blue);text-align:center;font-weight:800;font-size:11px;width:30px} td.gd span{writing-mode:vertical-rl;transform:rotate(180deg)}
@@ -83,7 +86,7 @@ body.filling,body.filling *{cursor:crosshair!important;user-select:none}
   .phead .info{display:flex;gap:0 18px;font-size:10px;margin-top:1px} .phead .date{font-size:10px}
   .wrap{flex:1 1 auto;min-height:0;overflow:visible;max-height:none;border:1px solid var(--line);border-top:3px solid var(--blue)}
   table{font-size:11px;width:100%;height:100%;table-layout:auto} th,td{padding:2px 4px}
-  thead th,th.nm,td.nm{position:static} thead tr{height:24px}
+  thead,th.nm,td.nm{position:static} thead tr{height:24px}
   th.nm,td.nm{min-width:0;width:250px;white-space:normal} th.v,td.v,td.h{min-width:0;height:auto} td.seq{min-width:0}
   thead th{white-space:normal;font-size:10px} td.gd{width:24px}
   th.stt,td.stt{width:32px} th.gd,td.gd{width:24px} th.seq,td.seq{width:52px} th.cnt,td.cnt{width:52px}

@@ -73,6 +73,8 @@ body.filling,body.filling *{cursor:crosshair!important;user-select:none}
 #toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);display:none;align-items:center;gap:14px;background:#1f2937;color:#fff;padding:9px 16px;border-radius:6px;font-size:13px;z-index:30;box-shadow:0 6px 20px rgba(0,0,0,.25)}
 #toast button{background:none;border:0;padding:0;color:#9cc3ff;font:inherit;font-weight:700;cursor:pointer}
 td.gd.sh{font-size:8px;line-height:1.15;white-space:normal;word-spacing:30px;padding:2px 1px}
+tr.bt td.nm{color:var(--blue)} td.b{text-align:center;min-width:56px;cursor:text;font-weight:700;font-size:11px;color:var(--blue)} td.b:hover{outline:2px solid var(--blue);outline-offset:-2px}
+tbody tr td.b.set{background:#dbe7f5} td.b input{width:100%;min-width:40px;box-sizing:border-box;padding:1px 2px;font:inherit;text-align:center;border:1px solid var(--blue)}
 #msg{padding:16px 0;color:var(--mut)} #msg.err{color:var(--red)}
 @media (max-width:640px){header{padding:8px 12px;gap:10px} .date{font-size:10px} header img{height:20px} header h1{font-size:12px} header .ttl{padding-left:10px} .info{font-size:10px;gap:0 10px} main{padding:10px 12px 12px}}
 @media print{
@@ -162,8 +164,14 @@ function renderArea(i){
     h+='<tr class="zr">'+fixed(' rowspan="2"')+groups.map(g=>`<th class="z" colspan="${g.n}"${za(g.l)}>${esc(g.z||'')}</th>`).join('')+'</tr><tr class="lr">';
   }else h+='<tr>'+fixed('');
   h+=L.map(l=>`<th class="v"${za(l)}>${esc(l.name)}</th>`).join('')+'</tr></thead><tbody>';
-  const msRows=list=>{let h='';list.forEach((m,j)=>{
-    const gd=j?'':`<td class="gd ms" rowspan="${list.length}" title="XD bàn giao">${list.length>2?'<span>XD BÀN GIAO</span>':'XD'}</td>`;
+  const msRows=(list,batch)=>{let h='';const span=list.length+(batch?1:0),gd0=`<td class="gd ms" rowspan="${span}" title="XD bàn giao">${span>2?'<span>XD BÀN GIAO</span>':'XD'}</td>`;
+    if(batch){ // hàng "Đợt bàn giao" trên cùng
+      const n=L.filter(l=>l.batch).length;
+      h+=`<tr class="bt"><td class="stt"></td>${gd0}<td class="nm">Đợt bàn giao</td><td></td><td class="cnt">${n}/${L.length}</td>`+
+        L.map(l=>`<td class="b${l.batch?' set':''}" data-l="${l.id}"${za(l)} title="Bấm để điền đợt bàn giao">${esc(l.batch??'')}</td>`).join('')+'</tr>';
+    }
+    list.forEach((m,j)=>{
+    const gd=j||batch?'':gd0;
     const n=L.filter(l=>effDate(m,l.id).date).length;
     h+=`<tr class="ms" data-m="${m.id}"><td class="stt"></td>${gd}<td class="nm">${esc(m.name)}</td><td></td><td class="cnt">${n}/${L.length}</td>`+
       L.map(l=>{const {date:d,auto}=effDate(m,l.id);const cls=d?(auto?' auto':' set'):'';
@@ -171,7 +179,7 @@ function renderArea(i){
         return `<td class="h${cls}" data-h="${m.id}:${l.id}"${za(l)} title="${tt}">${ddmm(d)}</td>`}).join('')+'</tr>';
   });return h};
   const M=miles.filter(m=>!m.area_code||m.area_code===a.code); // mốc của khu vực này
-  h+=msRows(M.filter(m=>!m.before_stage));
+  h+=msRows(M.filter(m=>!m.before_stage),true);
   T.forEach((t,j)=>{
     let gd='';
     if(j===0||T[j-1].stage!==t.stage)h+=msRows(M.filter(m=>m.before_stage===t.stage));
@@ -202,7 +210,7 @@ function render(){
   nav.querySelectorAll('button[data-t]').forEach((b,i)=>b.onclick=()=>{document.querySelectorAll('nav button[data-t],.tab').forEach(e=>e.classList.remove('on'));b.classList.add('on');document.getElementById(b.dataset.t).classList.add('on');setInfo(i)});
   const pb=document.createElement('button');pb.className='pdf';pb.textContent='Xuất PDF';pb.onclick=exportPDF;nav.appendChild(pb);setInfo(0);
   paintUpd();
-  tabs.addEventListener('click',onClick);tabs.addEventListener('click',onSeqClick);tabs.addEventListener('click',onHandClick);
+  tabs.addEventListener('click',onBatchClick);tabs.addEventListener('click',onClick);tabs.addEventListener('click',onSeqClick);tabs.addEventListener('click',onHandClick);
 }
 const rerenderLoc=lid=>{const l=locs.find(x=>x.id===lid);const i=areas.findIndex(a=>a.code===l?.area_code);if(i>=0){closePop();closeH();renderArea(i)}};
 // ----- ô ngày bàn giao -----
@@ -314,6 +322,28 @@ function onSeqClick(e){
   };
   inp.onkeydown=e=>{if(e.key==='Enter')finish(true);else if(e.key==='Escape')finish(false)};
   inp.onblur=()=>finish(true);
+}
+function onBatchClick(e){
+  const td=e.target.closest('td.b');if(!td||td.querySelector('input'))return;
+  closePop();closeH();
+  const l=locs.find(x=>x.id===+td.dataset.l),old=l.batch??null;
+  const inp=document.createElement('input');inp.maxLength=12;inp.value=old??'';inp.placeholder='Đợt';
+  td.textContent='';td.appendChild(inp);inp.focus();inp.select();
+  let done=false;
+  const finish=async save=>{
+    if(done)return;done=true;
+    const v=inp.value.trim()||null;
+    if(!save||v===old){td.textContent=old??'';return}
+    l.batch=v;rerenderLoc(l.id);
+    const r=await sb.from('locations').update({batch:v}).eq('id',l.id);
+    if(r.error){l.batch=old;rerenderLoc(l.id);alert('Không lưu được: '+r.error.message)}
+  };
+  inp.onkeydown=e=>{if(e.key==='Enter')finish(true);else if(e.key==='Escape')finish(false);else if(e.key==='Tab'){e.preventDefault();finish(true)}};
+  inp.onblur=()=>finish(true);
+}
+function onLocRealtime(p){
+  const l=locs.find(x=>x.id===p.new.id);if(!l||l.batch===p.new.batch)return;
+  l.batch=p.new.batch;if(!document.querySelector(`td.b[data-l="${l.id}"] input`))rerenderLoc(l.id);
 }
 function onTaskRealtime(p){
   const t=tasks.find(x=>x.id===p.new.id);if(!t)return;t.seq=p.new.seq;
@@ -457,7 +487,7 @@ function onRealtime(p){
     areas=a.data;miles=m.data;h.data.forEach(r=>hand.set(`${r.milestone_id}:${r.location_id}`,r.date));
     locs=l.data;tasks=t.data;p.data.forEach(r=>state.set(`${r.task_id}:${r.location_id}`,r));
     msg.remove();render();
-    sb.channel('progress').on('postgres_changes',{event:'*',schema:'public',table:'progress'},onRealtime).on('postgres_changes',{event:'UPDATE',schema:'public',table:'tasks'},onTaskRealtime).on('postgres_changes',{event:'*',schema:'public',table:'handovers'},onHandRealtime).subscribe();
+    sb.channel('progress').on('postgres_changes',{event:'*',schema:'public',table:'progress'},onRealtime).on('postgres_changes',{event:'UPDATE',schema:'public',table:'tasks'},onTaskRealtime).on('postgres_changes',{event:'*',schema:'public',table:'handovers'},onHandRealtime).on('postgres_changes',{event:'UPDATE',schema:'public',table:'locations'},onLocRealtime).subscribe();
   }catch(e){msg.className='err';msg.textContent='Không tải được dữ liệu: '+(e.message||e)}
 })();
 </script>

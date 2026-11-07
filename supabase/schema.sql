@@ -206,3 +206,10 @@ update locations set zone=case when name in ('CH 01','CH 02','CH 03','CH 04','CH
 delete from locations l where l.area_code='hanh_lang' and l.name in ('ZONE 3','ZONE 4')
   and not exists (select 1 from progress p where p.location_id=l.id)
   and not exists (select 1 from handovers h where h.location_id=l.id);
+
+-- Đợt bàn giao của từng căn / zone (sửa được từ web, chỉ cột batch)
+alter table locations add column if not exists batch text;
+revoke update on locations from anon, authenticated;
+grant update (batch) on locations to anon, authenticated;
+create policy "edit batch" on locations for update to anon, authenticated using (true) with check (true);
+alter publication supabase_realtime add table locations;

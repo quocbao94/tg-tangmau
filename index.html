@@ -166,8 +166,7 @@ function renderArea(i){
   h+=L.map(l=>`<th class="v"${za(l)}>${esc(l.name)}</th>`).join('')+'</tr></thead><tbody>';
   const msRows=(list,batch)=>{let h='';const span=list.length+(batch?1:0),gd0=`<td class="gd ms" rowspan="${span}" title="XD bàn giao">${span>2?'<span>XD BÀN GIAO</span>':'XD'}</td>`;
     if(batch){ // hàng "Đợt bàn giao" trên cùng
-      const n=L.filter(l=>l.batch).length;
-      h+=`<tr class="bt"><td class="stt"></td>${gd0}<td class="nm">Đợt bàn giao</td><td></td><td class="cnt">${n}/${L.length}</td>`+
+      h+=`<tr class="bt"><td class="stt"></td>${gd0}<td class="nm">Đợt bàn giao</td><td></td><td class="cnt"></td>`+
         L.map(l=>`<td class="b${l.batch?' set':''}" data-l="${l.id}"${za(l)} title="Bấm để điền đợt bàn giao">${esc(l.batch??'')}</td>`).join('')+'</tr>';
     }
     list.forEach((m,j)=>{

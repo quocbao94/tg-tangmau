@@ -74,7 +74,7 @@ body.filling,body.filling *{cursor:crosshair!important;user-select:none}
 #toast button{background:none;border:0;padding:0;color:#9cc3ff;font:inherit;font-weight:700;cursor:pointer}
 td.gd.sh{font-size:8px;line-height:1.15;white-space:normal;word-spacing:30px;padding:2px 1px}
 tr.bt td.nm{color:var(--blue)} td.b{text-align:center;min-width:56px;cursor:text;font-weight:700;font-size:11px;color:var(--blue)} td.b:hover{outline:2px solid var(--blue);outline-offset:-2px}
-tbody tr td.b.set{background:#dbe7f5} td.b input{width:100%;min-width:40px;box-sizing:border-box;padding:1px 2px;font:inherit;text-align:center;border:1px solid var(--blue)}
+tbody tr td.b.set{background:#dbe7f5} td.b{position:relative} td.b input{position:absolute;inset:1px;width:calc(100% - 2px);height:calc(100% - 2px);box-sizing:border-box;padding:0 2px;margin:0;font:inherit;text-align:center;border:1px solid var(--blue);outline:0;background:#fff}
 #msg{padding:16px 0;color:var(--mut)} #msg.err{color:var(--red)}
 @media (max-width:640px){header{padding:8px 12px;gap:10px} .date{font-size:10px} header img{height:20px} header h1{font-size:12px} header .ttl{padding-left:10px} .info{font-size:10px;gap:0 10px} main{padding:10px 12px 12px}}
 @media print{
@@ -324,21 +324,20 @@ function onSeqClick(e){
   inp.onblur=()=>finish(true);
 }
 function onBatchClick(e){
+  if(e.target===fh)return;
   const td=e.target.closest('td.b');if(!td||td.querySelector('input'))return;
-  closePop();closeH();
+  closePop();closeH();select(td);
   const l=locs.find(x=>x.id===+td.dataset.l),old=l.batch??null;
-  const inp=document.createElement('input');inp.maxLength=12;inp.value=old??'';inp.placeholder='Đợt';
-  td.textContent='';td.appendChild(inp);inp.focus();inp.select();
+  const inp=document.createElement('input');inp.maxLength=12;inp.value=old??'';
+  fh.remove();td.textContent='';td.appendChild(inp);inp.focus();inp.select();
   let done=false;
-  const finish=async save=>{
+  const finish=save=>{
     if(done)return;done=true;
     const v=inp.value.trim()||null;
-    if(!save||v===old){td.textContent=old??'';return}
-    l.batch=v;rerenderLoc(l.id);
-    const r=await sb.from('locations').update({batch:v}).eq('id',l.id);
-    if(r.error){l.batch=old;rerenderLoc(l.id);alert('Không lưu được: '+r.error.message)}
+    if(!save||v===old){td.textContent=old??'';markSel();return}
+    setBatch([[l.id,v]]);
   };
-  inp.onkeydown=e=>{if(e.key==='Enter')finish(true);else if(e.key==='Escape')finish(false);else if(e.key==='Tab'){e.preventDefault();finish(true)}};
+  inp.onkeydown=e=>{if(e.key==='Enter'||e.key==='Tab'){e.preventDefault();finish(true)}else if(e.key==='Escape')finish(false)};
   inp.onblur=()=>finish(true);
 }
 function onLocRealtime(p){
@@ -351,16 +350,16 @@ function onTaskRealtime(p){
 }
 // ===== Kéo ô để copy (fill handle như Excel) =====
 let selKey=null,selType=null;const fh=document.createElement('div');fh.className='fh';fh.title='Kéo để copy sang các ô khác';
-const cellOf=(t,k)=>document.querySelector(t==='v'?`td.v[data-k="${k}"]`:`td.h[data-h="${k}"]`);
+const cellOf=(t,k)=>document.querySelector(t==='v'?`td.v[data-k="${k}"]`:t==='b'?`td.b[data-l="${k}"]`:`td.h[data-h="${k}"]`);
 function markSel(){
   document.querySelectorAll('td.sel').forEach(t=>t.classList.remove('sel'));
   const td=selKey&&cellOf(selType,selKey);if(!td){fh.remove();return}
   td.classList.add('sel');td.appendChild(fh);
 }
-function select(td){if(td.matches('td.v')){selType='v';selKey=td.dataset.k}else{selType='h';selKey=td.dataset.h}markSel()}
+function select(td){if(td.matches('td.v')){selType='v';selKey=td.dataset.k}else if(td.matches('td.b')){selType='b';selKey=td.dataset.l}else{selType='h';selKey=td.dataset.h}markSel()}
 function fillRange(src,el){
   if(!el||el===src)return[];
-  if(selType==='h'){const tr=src.parentElement;return el.parentElement===tr?between([...tr.querySelectorAll('td.h')],src,el):[]}
+  if(selType!=='v'){const tr=src.parentElement,c=selType==='b'?'td.b':'td.h';return el.parentElement===tr?between([...tr.querySelectorAll(c)],src,el):[]}
   const rows=[...src.closest('tbody').querySelectorAll('tr[data-t]')],r0=rows.indexOf(src.parentElement),r1=rows.indexOf(el.parentElement);
   const cols=tr=>[...tr.querySelectorAll('td.v')],c0=cols(rows[r0]).indexOf(src),c1=cols(rows[r1]).indexOf(el);
   if(r1<0||c1<0)return[];
@@ -374,7 +373,7 @@ fh.addEventListener('pointerdown',e=>{
   let px=e.clientX,py=e.clientY,range=[],raf=0;
   document.body.classList.add('filling');
   const paint=next=>{range.forEach(td=>td.classList.remove('fillr'));range=next;range.forEach(td=>td.classList.add('fillr'))};
-  const update=()=>{const el=document.elementFromPoint(px,py)?.closest(type==='v'?'td.v':'td.h');if(el&&wrap.contains(el))paint(fillRange(src,el))};
+  const update=()=>{const el=document.elementFromPoint(px,py)?.closest(type==='v'?'td.v':type==='b'?'td.b':'td.h');if(el&&wrap.contains(el))paint(fillRange(src,el))};
   const loop=()=>{ // tự cuộn khi kéo sát mép bảng
     const r=wrap.getBoundingClientRect(),nm=wrap.querySelector('thead th.nm').getBoundingClientRect(),th=wrap.querySelector('thead').getBoundingClientRect(),m=40;
     const sp=(d)=>Math.ceil(Math.min(m,Math.max(0,m-d))/3);
@@ -387,7 +386,7 @@ fh.addEventListener('pointerdown',e=>{
   const up=()=>{
     cancelAnimationFrame(raf);removeEventListener('pointermove',move);removeEventListener('pointerup',up);removeEventListener('pointercancel',up);
     document.body.classList.remove('filling');const cells=range;paint([]);
-    if(cells.length)(type==='v'?fillV:fillH)(src,cells);
+    if(cells.length)(type==='v'?fillV:type==='b'?fillB:fillH)(src,cells);
   };
   addEventListener('pointermove',move);addEventListener('pointerup',up);addEventListener('pointercancel',up);
   raf=requestAnimationFrame(loop);
@@ -447,6 +446,10 @@ addEventListener('keydown',e=>{
   if(e.target.closest('input,textarea,select,[contenteditable]'))return; // đang gõ trong ô nhập thì để yên
   const td=cellOf(selType,selKey);if(!td)return;
   e.preventDefault();closePop();closeH();
+  if(selType==='b'){
+    const l=locs.find(x=>x.id===+selKey),prev=l?.batch;if(!prev)return;
+    setBatch([[l.id,null]]);toast('Đã xóa đợt bàn giao',()=>setBatch([[l.id,prev]]));return;
+  }
   if(selType==='v'){
     const k=selKey,prev=state.get(k);if(!prev)return;
     state.delete(k);repaintV([k]);saveV([k]);
@@ -458,6 +461,23 @@ addEventListener('keydown',e=>{
     toast(m.base_id?'Đã xóa ngày sửa tay, về ngày mặc định':'Đã xóa ngày bàn giao',()=>{hand.set(k,prev);rerenderLoc(lid);saveH([k])});
   }
 });
+// --- ô đợt bàn giao ---
+function fillB(src,cells){
+  const v=locs.find(x=>x.id===+src.dataset.l).batch??null,ids=cells.map(td=>+td.dataset.l);
+  const prev=ids.map(id=>[id,locs.find(x=>x.id===id).batch??null]);
+  setBatch(ids.map(id=>[id,v]));
+  toast(`Đã copy sang ${ids.length} ô`,()=>setBatch(prev));
+}
+async function setBatch(pairs){ // [[locationId, giá trị]] — gom theo giá trị để lưu ít lần
+  pairs.forEach(([id,v])=>{const l=locs.find(x=>x.id===id);if(l)l.batch=v});
+  rerenderLoc(pairs[0][0]);
+  const by=new Map();pairs.forEach(([id,v])=>{const k=v??'';if(!by.has(k))by.set(k,[]);by.get(k).push(id)});
+  const rs=await Promise.all([...by].map(([v,ids])=>sb.from('locations').update({batch:v||null}).in('id',ids)));
+  const err=rs.find(r=>r.error);
+  if(err){const g=await sb.from('locations').select('id,batch').in('id',pairs.map(p=>p[0]));
+    if(!g.error)g.data.forEach(r=>{const l=locs.find(x=>x.id===r.id);if(l)l.batch=r.batch});
+    rerenderLoc(pairs[0][0]);alert('Không lưu được: '+err.error.message)}
+}
 // --- thông báo + hoàn tác ---
 let toastTimer=0;
 function toast(msg,undo){

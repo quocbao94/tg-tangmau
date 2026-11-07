@@ -182,8 +182,8 @@ on conflict (name) do nothing;
 
 -- Dòng "Vị trí" hiển thị dưới tiêu đề và trên file PDF
 alter table areas add column if not exists location_label text;
-update areas set location_label='TẦNG MẪU – TẦNG 5 THÁP B (23 căn: CH 01–18, CH 39–43)' where code='can_ho';
-update areas set location_label='TẦNG MẪU – TẦNG 5 THÁP B – HÀNH LANG' where code='hanh_lang';
+update areas set location_label='TẦNG MẪU – TẦNG 5 THÁP B1 (23 căn: CH 01–18, CH 39–43)' where code='can_ho';
+update areas set location_label='TẦNG MẪU – TẦNG 5 THÁP B1 – HÀNH LANG' where code='hanh_lang';
 
 -- Hành lang thêm ZONE 4
 insert into locations (area_code,name,sort) values ('hanh_lang','ZONE 4',4) on conflict do nothing;
@@ -218,3 +218,4 @@ alter publication supabase_realtime add table locations;
 alter table locations add column if not exists note text;
 update locations set note='BY4–BY23' where area_code='hanh_lang' and name='ZONE 1';
 update locations set note='BX4–BX27' where area_code='hanh_lang' and name='ZONE 2';
+

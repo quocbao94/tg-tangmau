@@ -200,3 +200,9 @@ update locations l set zone=v.z from (values
   ('ZONE 3',array['CH 12','CH 13','CH 14','CH 43']),
   ('ZONE 4',array['CH 15','CH 16','CH 17','CH 18','CH 39','CH 40','CH 41','CH 42'])
 ) v(z,names) where l.area_code='can_ho' and l.name=any(v.names);
+
+-- Gom lại còn 2 zone (07/11/2026)
+update locations set zone=case when name in ('CH 01','CH 02','CH 03','CH 04','CH 05','CH 06','CH 07','CH 08','CH 09') then 'ZONE 1' else 'ZONE 2' end where area_code='can_ho';
+delete from locations l where l.area_code='hanh_lang' and l.name in ('ZONE 3','ZONE 4')
+  and not exists (select 1 from progress p where p.location_id=l.id)
+  and not exists (select 1 from handovers h where h.location_id=l.id);

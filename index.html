@@ -75,6 +75,7 @@ body.filling,body.filling *{cursor:crosshair!important;user-select:none}
 td.gd.sh{font-size:8px;line-height:1.15;white-space:normal;word-spacing:30px;padding:2px 1px}
 tr.bt td.nm{color:var(--blue)} td.b{text-align:center;min-width:56px;cursor:text;font-weight:700;font-size:11px;color:var(--blue)} td.b:hover{outline:2px solid var(--blue);outline-offset:-2px}
 tbody tr td.b.set{background:#dbe7f5} td.b{position:relative} td.b input{position:absolute;inset:1px;width:calc(100% - 2px);height:calc(100% - 2px);box-sizing:border-box;padding:0 2px;margin:0;font:inherit;text-align:center;border:1px solid var(--blue);outline:0;background:#fff}
+thead th small.nt{display:block;font-size:10px;font-weight:600;color:#cfe0f5;letter-spacing:.3px;margin-top:1px}
 #msg{padding:16px 0;color:var(--mut)} #msg.err{color:var(--red)}
 @media (max-width:640px){header{padding:8px 12px;gap:10px} .date{font-size:10px} header img{height:20px} header h1{font-size:12px} header .ttl{padding-left:10px} .info{font-size:10px;gap:0 10px} main{padding:10px 12px 12px}}
 @media print{
@@ -163,7 +164,7 @@ function renderArea(i){
     const groups=[];L.forEach(l=>{const g=groups[groups.length-1];if(g&&g.z===l.zone)g.n++;else groups.push({z:l.zone,n:1,l})});
     h+='<tr class="zr">'+fixed(' rowspan="2"')+groups.map(g=>`<th class="z" colspan="${g.n}"${za(g.l)}>${esc(g.z||'')}</th>`).join('')+'</tr><tr class="lr">';
   }else h+='<tr>'+fixed('');
-  h+=L.map(l=>`<th class="v"${za(l)}>${esc(l.name)}</th>`).join('')+'</tr></thead><tbody>';
+  h+=L.map(l=>`<th class="v"${za(l)}>${esc(l.name)}${l.note?`<small class="nt">${esc(l.note)}</small>`:''}</th>`).join('')+'</tr></thead><tbody>';
   const msRows=(list,batch)=>{let h='';const span=list.length+(batch?1:0),gd0=`<td class="gd ms" rowspan="${span}" title="XD bàn giao">${span>2?'<span>XD BÀN GIAO</span>':'XD'}</td>`;
     if(batch){ // hàng "Đợt bàn giao" trên cùng
       h+=`<tr class="bt"><td class="stt"></td>${gd0}<td class="nm">Đợt bàn giao</td><td></td><td class="cnt"></td>`+

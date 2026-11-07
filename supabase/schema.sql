@@ -213,3 +213,8 @@ revoke update on locations from anon, authenticated;
 grant update (batch) on locations to anon, authenticated;
 create policy "edit batch" on locations for update to anon, authenticated using (true) with check (true);
 alter publication supabase_realtime add table locations;
+
+-- Chú thích phạm vi trục của zone hành lang
+alter table locations add column if not exists note text;
+update locations set note='BY4–BY23' where area_code='hanh_lang' and name='ZONE 1';
+update locations set note='BX4–BX27' where area_code='hanh_lang' and name='ZONE 2';

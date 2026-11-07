@@ -178,7 +178,7 @@ function renderArea(i){
         return `<td class="h${cls}" data-h="${m.id}:${l.id}"${za(l)} title="${tt}">${ddmm(d)}</td>`}).join('')+'</tr>';
   });return h};
   const M=miles.filter(m=>!m.area_code||m.area_code===a.code); // mốc của khu vực này
-  h+=msRows(M.filter(m=>!m.before_stage),true);
+  h+=msRows(M.filter(m=>!m.before_stage),a.code==='can_ho'); // hàng đợt bàn giao chỉ có ở tab Căn hộ
   T.forEach((t,j)=>{
     let gd='';
     if(j===0||T[j-1].stage!==t.stage)h+=msRows(M.filter(m=>m.before_stage===t.stage));
